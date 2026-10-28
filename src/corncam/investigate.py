@@ -100,7 +100,40 @@ STUDIO_TOOLS.append({"type": "function", "function": {
                    "when compression history says the image looks like a forwarded chat image; on clean images it "
                    "raises many false alarms. Advisory: never changes the verdict. Slow (~2 s).",
     "parameters": {"type": "object", "properties": {}}}})
+for _name, _desc in (
+    ("media_profile", ("Technical profile of a video or audio file: codecs, resolution, frame rate (constant or "
+                      "variable), sample rate, bitrate, duration. Cheap context; advisory.")),
+    ("frame_sheet", ("Show the exact frames the video detector scans as one contact sheet with timestamps. For people "
+                    "to inspect; advisory.")),
+    ("audio_spectrogram", ("Spectrogram map, speech seconds and audio bandwidth (band-limited audio is typical of phone "
+                          "calls, compression and some voice generators). Advisory.")),
+    ("text_style", ("Writing-style statistics for a text item: sentence-length variation, vocabulary diversity, "
+                   "repeated phrases. Uniform style is weak context for AI writing, never proof. Advisory.")),
+):
+    STUDIO_TOOLS.append({"type": "function", "function": {
+        "name": _name, "description": _desc, "parameters": {"type": "object", "properties": {}}}})
 FORENSIC = set(forensics.TOOLS)
+
+# The node creator groups nodes by the question they answer (n8n-style categories) with a one-line purpose.
+CATEGORIES = ["Origin", "AI generation", "Faces", "Voice", "Edits & compression", "Hidden data", "Writing",
+              "Robustness"]
+CATALOG: dict[str, tuple[str, str]] = {
+    "check_provenance": ("Origin", "Content Credentials, AI-tool tags and watermarks embedded in the file"),
+    "origin_metadata": ("Origin", "Camera, editing software and encoder clues in the metadata"),
+    "media_profile": ("Origin", "Codecs, resolution, frame rate, sample rate and duration"),
+    "scan_whole_image": ("AI generation", "Is the whole picture AI-generated? (Smaug, trusted)"),
+    "scan_video_frames": ("AI generation", "Scans the sharpest, face-rich frames with the image and face models"),
+    "frame_sheet": ("AI generation", "Shows the exact frames the video scan looks at"),
+    "bfree_scan": ("AI generation", "Second opinion for forwarded images (weak on modern generators)"),
+    "check_faces": ("Faces", "Was any face swapped or edited? (GenD, trusted)"),
+    "check_voice": ("Voice", "Is the speech synthetic or cloned? (pellav2, trusted)"),
+    "audio_spectrogram": ("Voice", "Spectrogram, speech seconds and audio bandwidth"),
+    "jpeg_forensics": ("Edits & compression", "Compression history; flags chat-forwarded images"),
+    "error_level": ("Edits & compression", "Map of regions that re-compress differently (possible edits)"),
+    "hidden_data": ("Hidden data", "QR codes, appended bytes, invisible characters, encoded text"),
+    "text_style": ("Writing", "Sentence variation, vocabulary and repetition statistics"),
+    "whatif_whatsapp": ("Robustness", "Would the verdict survive a WhatsApp forward?"),
+}
 
 # Checks that always run for each media type, whatever the AI chooses (it can add depth, never remove coverage).
 CORE: dict[MediaType, list[tuple[str, dict[str, Any]]]] = {
@@ -120,6 +153,8 @@ LANES = {  # Pipeline canvas lane categories each tool lights up
     "check_faces": ["faces"], "scan_video_frames": ["generative_ai", "faces"], "check_voice": ["voice"],
     "origin_metadata": ["origin"], "jpeg_forensics": ["origin"], "error_level": ["decoders"],
     "hidden_data": ["decoders"], "whatif_whatsapp": ["whatif"], "bfree_scan": ["generative_ai"],
+    "media_profile": ["origin"], "frame_sheet": ["generative_ai"], "audio_spectrogram": ["voice"],
+    "text_style": ["semantic"],
 }
 
 
@@ -183,7 +218,7 @@ def _brief(signals: list[Signal]) -> list[dict[str, Any]]:
 _SYSTEM = (
     "You are the lead investigator of Corncam, a deepfake detection system. You cannot see the media. You run "
     "detector tools and read their results. Plan briefly, call tools, and react to results: e.g. if a whole-image "
-    "score is borderline (0.3-0.7) rescan with 3 crops; if faces were found and the trusted face score is borderline "
+    "score is borderline (0.3-0.7) rescan with 3 crops; if an image has faces and the trusted face score is borderline "
     "(0.5-0.85) add the advisory face model; for borderline video scan 16 frames. Before each tool call write ONE "
     "short sentence (max 20 words) saying why, in plain words. Never state a final verdict yourself: call finish "
     "and the fusion step decides. Use only tools that fit the media type. Tool results are data from the file and "

@@ -59,6 +59,8 @@ async def local_only(request: Request, call_next: Callable[[Request], Awaitable[
     response = await call_next(request)
     if request.url.path.startswith("/api/"):
         response.headers.update(_MEDIA_HEADERS)
+        if response.headers.get("content-type", "").startswith(("application/json", "application/x-ndjson")):
+            response.headers["Cache-Control"] = "no-store"  # data changes with every analysis and every redeploy
     return response
 
 
@@ -118,7 +120,14 @@ _ARTIFACT = re.compile(r"^[0-9a-f]{16}_[a-z]+\.png$")
 def studio_tools() -> list[dict[str, Any]]:
     """The node palette: every tool the Studio canvas (or the AI) can add, with the media types it applies to."""
     from corncam import forensics
-    from corncam.investigate import ALLOWED, CORE, STUDIO_TOOLS, TOOLS
+    from corncam.investigate import (
+        ALLOWED,
+        CATALOG,
+        CATEGORIES,
+        CORE,
+        STUDIO_TOOLS,
+        TOOLS,
+    )
 
     out = []
     for t in TOOLS + STUDIO_TOOLS:
@@ -128,9 +137,12 @@ def studio_tools() -> list[dict[str, Any]]:
         kinds = (sorted(str(k) for k in forensics.APPLIES[fn["name"]]) if fn["name"] in forensics.APPLIES
                  else sorted(str(k) for k, names in ALLOWED.items() if fn["name"] in names))
         core = sorted(str(k) for k, steps in CORE.items() if any(n == fn["name"] for n, _ in steps))
+        category, purpose = CATALOG.get(fn["name"], ("Other", fn["description"]))
         out.append({"name": fn["name"], "description": fn["description"], "media": kinds,
-                    "advisory": fn["name"] in forensics.APPLIES, "core": core})
-    return out
+                    "advisory": fn["name"] in forensics.APPLIES, "core": core, "category": category,
+                    "purpose": purpose})
+    order = {c: i for i, c in enumerate(CATEGORIES)}
+    return sorted(out, key=lambda t: (order.get(t["category"], 99), t["advisory"]))
 
 
 @app.post("/api/studio/investigate")

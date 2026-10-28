@@ -230,6 +230,9 @@ export interface StudioTool {
   advisory: boolean
   /** media types for which this check always runs, whatever the AI or the person chooses */
   core: MediaKind[]
+  /** the question it answers (node-creator group) and a one-line purpose */
+  category: string
+  purpose: string
 }
 
 /** POST a form and read the newline-delimited JSON event stream (investigator and Studio). */

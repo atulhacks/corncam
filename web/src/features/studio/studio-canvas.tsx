@@ -98,7 +98,11 @@ function subOf(run: ToolRun): string {
   if (run.status === "running") return "Running…"
   if (run.advisory) {
     const s = run.signals[0]
-    return s ? (s.rank === "uncertain" ? "Flagged" : "Nothing found") : "Done"
+    if (!s) return "Done"
+    if (s.rank === "uncertain") return "Flagged"
+    if (typeof s.details?.artifact === "string") return "Map ready"
+    if (/^NO_|NOTHING/.test(s.reason_code)) return "Nothing found"
+    return "Details"
   }
   const head =
     run.signals.find((s) => s.score != null && s.policy !== "ignore") ??
@@ -164,8 +168,8 @@ function FlowNodeView({ data, selected }: NodeProps<FlowNode>) {
               </div>
             </div>
             <div className="grid grid-cols-3 border-t border-border/60 py-1 text-center text-[10px] text-muted-foreground">
-              <span>Chat model</span>
-              <span>Detectors</span>
+              <span>Chat model*</span>
+              <span>Detectors*</span>
               <span>Forensics</span>
             </div>
           </div>
@@ -286,7 +290,9 @@ function Details({ signal }: { signal: Signal }) {
         <dl className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-3 gap-y-1 text-xs">
           {rows.map(([k, v]) => (
             <React.Fragment key={k}>
-              <dt className="text-muted-foreground">{k.replace(/_/g, " ")}</dt>
+              <dt className="text-muted-foreground">
+                {k.replace(/_s$/, " (s)").replace(/_/g, " ")}
+              </dt>
               <dd className="font-mono break-words">
                 {Array.isArray(v) ? v.join(" · ") : String(v)}
               </dd>
@@ -298,7 +304,104 @@ function Details({ signal }: { signal: Signal }) {
   )
 }
 
-/** n8n's node creator: a searchable list of every node that applies to this file. */
+const MEDIA_TABS: { id: MediaKind | "all"; label: string }[] = [
+  { id: "all", label: "All" },
+  { id: "image", label: "Image" },
+  { id: "video", label: "Video" },
+  { id: "audio", label: "Audio" },
+  { id: "text", label: "Text" },
+]
+const MEDIA_CHIP: Record<string, string> = {
+  image: "IMG",
+  video: "VID",
+  audio: "AUD",
+  text: "TXT",
+}
+
+/** One row in n8n's node-creator style: icon tile, title and badge, one-line purpose, media chips. */
+function CreatorRow({
+  tool,
+  on,
+  core,
+  disabled,
+  reason,
+  onToggle,
+}: {
+  tool: StudioTool
+  on: boolean
+  core: boolean
+  disabled: boolean
+  reason?: string
+  onToggle: () => void
+}) {
+  const meta = TOOL_META[tool.name] ?? TOOL_META.unknown
+  const Icon = meta.icon
+  return (
+    <button
+      type="button"
+      disabled={disabled || core}
+      onClick={onToggle}
+      aria-pressed={on}
+      title={tool.description}
+      className={cn(
+        "grid w-full grid-cols-[auto_minmax(0,1fr)_auto] items-start gap-3 rounded-md px-2 py-2 text-left transition-colors",
+        on && !core ? "bg-brand/10" : "enabled:hover:bg-foreground/[0.05]",
+        (disabled || core) && "cursor-default",
+        disabled && "opacity-45"
+      )}
+    >
+      <span className="mt-0.5 grid size-8 place-items-center rounded-md border bg-background text-brand">
+        <Icon className="size-4" aria-hidden />
+      </span>
+      <span className="grid min-w-0 gap-1">
+        <span className="flex min-w-0 items-center gap-1.5">
+          <span className="truncate text-sm">{meta.label}</span>
+          <span
+            className={cn(
+              "shrink-0 rounded-full border px-1.5 py-px font-mono text-[9px] tracking-wider uppercase",
+              tool.advisory
+                ? "text-muted-foreground"
+                : "border-brand/40 text-brand"
+            )}
+          >
+            {tool.advisory ? "Shown only" : "Votes"}
+          </span>
+        </span>
+        <span className="line-clamp-2 text-[11px] leading-snug text-muted-foreground">
+          {reason ?? tool.purpose}
+        </span>
+        <span className="flex gap-1">
+          {tool.media.map((m) => (
+            <span
+              key={m}
+              className="rounded bg-muted px-1 font-mono text-[9px] text-muted-foreground"
+            >
+              {MEDIA_CHIP[m] ?? m}
+            </span>
+          ))}
+        </span>
+      </span>
+      <span className="mt-1.5">
+        {core ? (
+          <span className="font-mono text-[9px] tracking-wider text-muted-foreground">
+            ALWAYS
+          </span>
+        ) : on ? (
+          <CheckIcon className="size-4 text-brand" aria-hidden />
+        ) : (
+          !disabled && (
+            <PlusIcon className="size-4 text-muted-foreground" aria-hidden />
+          )
+        )}
+      </span>
+    </button>
+  )
+}
+
+/**
+ * n8n's node creator: search, nodes grouped by the question they answer, and media filters. With a file loaded it
+ * lists what applies to that file, and keeps the rest in a collapsed "not for this file" section with the reason.
+ */
 function NodeCreator({
   tools,
   picked,
@@ -315,26 +418,38 @@ function NodeCreator({
   disabled: boolean
 }) {
   const [q, setQ] = React.useState("")
-  const list = tools.filter(
-    (t) =>
-      (!media || t.media.includes(media)) &&
-      (TOOL_META[t.name]?.label ?? t.name)
-        .toLowerCase()
-        .includes(q.toLowerCase())
+  const [tab, setTab] = React.useState<MediaKind | "all">("all")
+  const [showOther, setShowOther] = React.useState(false)
+  const filter = media ?? (tab === "all" ? undefined : tab)
+  const matches = (t: StudioTool) =>
+    `${TOOL_META[t.name]?.label ?? t.name} ${t.purpose} ${t.category}`
+      .toLowerCase()
+      .includes(q.toLowerCase())
+  const fits = tools.filter(
+    (t) => matches(t) && (!filter || t.media.includes(filter))
   )
-  const groups = [
-    ["Detectors · vote", list.filter((t) => !t.advisory)],
-    ["Forensics · shown only", list.filter((t) => t.advisory)],
-  ] as const
+  const others = media
+    ? tools.filter((t) => matches(t) && !t.media.includes(media))
+    : []
+  const categories = [...new Set(fits.map((t) => t.category))]
+  const onlyFor = (t: StudioTool) =>
+    `For ${t.media.map((m) => MEDIA_TABS.find((x) => x.id === m)?.label.toLowerCase()).join(" and ")} files only.`
   return (
     <Card
       className={cn(
-        "flex w-[min(19rem,calc(100vw-4rem))] flex-col gap-0 overflow-hidden bg-card/95 p-0 shadow-lg backdrop-blur",
+        "flex w-[min(21rem,calc(100vw-4rem))] flex-col gap-0 overflow-hidden bg-card/95 p-0 shadow-lg backdrop-blur",
         PANEL_MAX_H
       )}
     >
       <div className="flex items-center justify-between gap-2 border-b px-4 py-3">
-        <h3 className="text-sm font-semibold">Add a node</h3>
+        <div className="grid gap-0.5">
+          <h3 className="text-sm font-semibold">Add a node</h3>
+          <span className="text-[11px] text-muted-foreground">
+            {media
+              ? `Showing checks for this ${media} file`
+              : "Drop a file to see only the checks that apply"}
+          </span>
+        </div>
         <Button
           variant="ghost"
           size="icon"
@@ -345,77 +460,94 @@ function NodeCreator({
           <XIcon aria-hidden />
         </Button>
       </div>
-      <div className="relative border-b px-3 py-2">
-        <SearchIcon
-          className="absolute top-1/2 left-5 size-3.5 -translate-y-1/2 text-muted-foreground"
-          aria-hidden
-        />
-        <Input
-          value={q}
-          onChange={(e) => setQ(e.target.value)}
-          placeholder="Search nodes…"
-          className="h-8 pl-7 text-sm"
-          aria-label="Search nodes"
-        />
+      <div className="grid gap-2 border-b px-3 py-2">
+        <div className="relative">
+          <SearchIcon
+            className="absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-muted-foreground"
+            aria-hidden
+          />
+          <Input
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            placeholder="Search nodes…"
+            className="h-8 pl-7 text-sm"
+            aria-label="Search nodes"
+          />
+        </div>
+        {!media && (
+          <div className="flex gap-1" role="tablist" aria-label="Media type">
+            {MEDIA_TABS.map((m) => (
+              <button
+                key={m.id}
+                type="button"
+                role="tab"
+                aria-selected={tab === m.id}
+                onClick={() => setTab(m.id)}
+                className={cn(
+                  "rounded-md px-2 py-1 text-xs transition-colors",
+                  tab === m.id
+                    ? "bg-foreground/10 text-foreground"
+                    : "text-muted-foreground hover:text-foreground"
+                )}
+              >
+                {m.label}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
       <div className="grid gap-3 overflow-y-auto p-2">
-        {groups.map(([label, group]) =>
-          group.length === 0 ? null : (
-            <div key={label} className="grid gap-0.5">
-              <p className="px-2 pt-1 text-[11px] text-muted-foreground">
-                {label}
-              </p>
-              {group.map((t) => {
-                const meta = TOOL_META[t.name] ?? TOOL_META.unknown
-                const core = media ? t.core.includes(media) : false
-                const on = core || picked.includes(t.name)
-                const Icon = meta.icon
-                return (
-                  <button
-                    key={t.name}
-                    type="button"
-                    disabled={core || disabled}
-                    onClick={() => onToggle(t.name)}
-                    aria-pressed={on}
-                    className={cn(
-                      "grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 rounded-md px-2 py-2 text-left transition-colors",
-                      on && !core
-                        ? "bg-brand/10"
-                        : "hover:bg-foreground/[0.05]",
-                      core && "cursor-default"
-                    )}
-                  >
-                    <span className="grid size-8 place-items-center rounded-md border bg-background text-brand">
-                      <Icon className="size-4" aria-hidden />
-                    </span>
-                    <span className="grid min-w-0 gap-0.5">
-                      <span className="truncate text-sm">{meta.label}</span>
-                      <span className="line-clamp-2 text-[11px] leading-snug text-muted-foreground">
-                        {t.description}
-                      </span>
-                    </span>
-                    {core ? (
-                      <span className="font-mono text-[9px] tracking-wider text-muted-foreground">
-                        ALWAYS
-                      </span>
-                    ) : on ? (
-                      <CheckIcon className="size-4 text-brand" aria-hidden />
-                    ) : (
-                      <PlusIcon
-                        className="size-4 text-muted-foreground"
-                        aria-hidden
-                      />
-                    )}
-                  </button>
-                )
-              })}
-            </div>
-          )
-        )}
-        {list.length === 0 && (
+        {categories.map((cat) => (
+          <section key={cat || "Other"} className="grid gap-0.5">
+            <h4 className="px-2 pt-1 text-[11px] font-medium text-muted-foreground">
+              {cat}
+            </h4>
+            {fits
+              .filter((t) => t.category === cat)
+              .map((t) => (
+                <CreatorRow
+                  key={t.name}
+                  tool={t}
+                  core={media ? t.core.includes(media) : false}
+                  on={
+                    (media ? t.core.includes(media) : false) ||
+                    picked.includes(t.name)
+                  }
+                  disabled={disabled || !media}
+                  onToggle={() => onToggle(t.name)}
+                />
+              ))}
+          </section>
+        ))}
+        {fits.length === 0 && (
           <p className="px-2 py-6 text-center text-sm text-muted-foreground">
             No nodes match.
           </p>
+        )}
+        {others.length > 0 && (
+          <section className="grid gap-0.5 border-t pt-2">
+            <button
+              type="button"
+              onClick={() => setShowOther((v) => !v)}
+              aria-expanded={showOther}
+              className="px-2 py-1 text-left text-[11px] font-medium text-muted-foreground hover:text-foreground"
+            >
+              {showOther ? "Hide" : "Show"} {others.length} not for {media}{" "}
+              files
+            </button>
+            {showOther &&
+              others.map((t) => (
+                <CreatorRow
+                  key={t.name}
+                  tool={t}
+                  core={false}
+                  on={false}
+                  disabled
+                  reason={onlyFor(t)}
+                  onToggle={() => undefined}
+                />
+              ))}
+          </section>
         )}
       </div>
     </Card>

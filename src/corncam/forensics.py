@@ -275,6 +275,174 @@ def whatif_whatsapp(item: Item) -> list[Signal]:
                                                         "smaug_after": smaug})]
 
 
+# ---------------------------------------------------------------- audio and video
+
+
+def _probe(path: Path) -> dict[str, Any]:
+    out = subprocess.run(["ffprobe", "-v", "error", "-show_streams", "-show_format", "-of", "json", str(path)],
+                         capture_output=True, text=True, check=False, timeout=30)
+    try:
+        return json.loads(out.stdout or "{}")
+    except json.JSONDecodeError:
+        return {}
+
+
+def _rate(r: str | None) -> float | None:
+    try:
+        num, den = (r or "0/0").split("/")
+        return round(float(num) / float(den), 2) if float(den) else None
+    except ValueError:
+        return None
+
+
+_SAFE_ID = re.compile(r"^[a-z0-9_.-]{1,32}$")  # ffprobe codec/format identifiers; anything else is not echoed
+
+
+def media_profile(item: Item) -> list[Signal]:
+    """Technical profile of a video or audio file: codecs, size, frame rate (constant or variable), sample rate,
+    bitrate and duration. Context for a person; none of it proves anything alone."""
+    data = _probe(item.path)
+    streams = data.get("streams", [])
+    v = next((st for st in streams if st.get("codec_type") == "video"), None)
+    a = next((st for st in streams if st.get("codec_type") == "audio"), None)
+    fmt = data.get("format", {})
+    safe = lambda x: x if isinstance(x, str) and _SAFE_ID.match(x) else None
+    d: dict[str, Any] = {"container": safe((fmt.get("format_name") or "").split(",")[0]),
+                         "duration_s": round(float(fmt.get("duration") or 0), 2) or None,
+                         "bitrate_kbps": round(int(fmt.get("bit_rate") or 0) / 1000) or None}
+    parts = []
+    notes = []
+    if v:
+        fr, avg = _rate(v.get("r_frame_rate")), _rate(v.get("avg_frame_rate"))
+        d |= {"video_codec": safe(v.get("codec_name")), "width": v.get("width"), "height": v.get("height"),
+              "fps": avg or fr, "variable_frame_rate": bool(fr and avg and abs(fr - avg) > 0.5)}
+        parts.append(f"{d['video_codec'] or 'video'} {d['width']}x{d['height']} at {d['fps']} fps")
+        if d["variable_frame_rate"]:
+            notes.append("variable frame rate (common for phone recordings and screen captures)")
+    if a:
+        sr = int(a.get("sample_rate") or 0) or None
+        d |= {"audio_codec": safe(a.get("codec_name")), "sample_rate": sr, "channels": a.get("channels")}
+        parts.append(f"{d['audio_codec'] or 'audio'} {sr / 1000 if sr else '?'} kHz, {d['channels']} ch")
+        if sr and sr <= 24000:
+            notes.append(f"{sr / 1000:g} kHz sample rate (phone-quality; also typical of many voice generators)")
+    if d["duration_s"]:
+        parts.append(f"{d['duration_s']} s")
+    if not parts:
+        return [_signal("Technical profile", Category.PROVENANCE, "NOT_APPLICABLE", "No audio or video streams.")]
+    evidence = "Technical profile: " + ", ".join(parts) + "." + (" Note: " + "; ".join(notes) + "." if notes else "")
+    return [_signal("Technical profile", Category.PROVENANCE, "MEDIA_PROFILE", evidence, flagged=bool(notes),
+                    details=d)]
+
+
+def frame_sheet(item: Item) -> list[Signal]:
+    """The exact frames the video detector scans (sharpest, face-rich, spread over the clip), as one contact sheet."""
+    import cv2
+    import numpy as np
+
+    from corncam.signals import video as video_sig
+
+    with tempfile.TemporaryDirectory() as tmp:
+        picked = video_sig.select_frames(item.path, Path(tmp), n=video_sig.N_FRAMES)
+        tiles = []
+        for t, fp, q in picked:
+            img = cv2.imread(str(fp), cv2.IMREAD_COLOR)
+            if img is None:
+                continue
+            h, w = img.shape[:2]
+            img = cv2.resize(img, (240, max(1, int(h * 240 / w))))
+            cv2.rectangle(img, (0, 0), (74, 20), (0, 0, 0), -1)
+            cv2.putText(img, f"{t:5.1f}s", (4, 15), cv2.FONT_HERSHEY_SIMPLEX, 0.45, (255, 255, 255), 1, cv2.LINE_AA)
+            tiles.append(img)
+    if not tiles:
+        return [_signal("Scanned frames", Category.GENERATIVE_AI, "NO_FRAMES", "No usable frames could be read.")]
+    th = max(t.shape[0] for t in tiles)
+    tiles = [cv2.copyMakeBorder(t, 0, th - t.shape[0], 0, 0, cv2.BORDER_CONSTANT, value=0) for t in tiles]
+    cols = 4
+    rows = [np.hstack(tiles[i:i + cols] + [np.zeros_like(tiles[0])] * (cols - len(tiles[i:i + cols])))
+            for i in range(0, len(tiles), cols)]
+    ARTIFACTS.mkdir(parents=True, exist_ok=True)
+    name = f"{item.sha256[:16]}_frames.png"
+    cv2.imwrite(str(ARTIFACTS / name), np.vstack(rows))
+    faces = sum(1 for _, _, q in picked if q.get("faces"))
+    return [_signal("Scanned frames", Category.GENERATIVE_AI, "FRAME_SHEET",
+                    f"{len(tiles)} frames picked for scanning across the clip, {faces} with a face.",
+                    details={"artifact": f"/api/studio/artifacts/{name}",
+                             "times_s": [round(t, 1) for t, _, _ in picked]})]
+
+
+def audio_spectrogram(item: Item) -> list[Signal]:
+    """Spectrogram map, speech seconds and audio bandwidth. Generated and phone audio is often band-limited; real
+    studio or phone-mic recordings usually have energy up to the top of their sample rate."""
+    import numpy as np
+    from PIL import Image
+
+    from corncam.signals import audio as audio_sig
+
+    try:
+        wav = audio_sig.decode(str(item.path))  # 16 kHz mono float
+    except Exception:  # noqa: BLE001 - a file without decodable audio is reported, not raised
+        wav = np.zeros(0, dtype=np.float32)
+    if wav.size < 1600:
+        return [_signal("Spectrogram", Category.VOICE, "NO_AUDIO", "No decodable audio track.")]
+    n, hop = 512, 160
+    frames = np.lib.stride_tricks.sliding_window_view(wav, n)[::hop] * np.hanning(n)
+    mag = np.abs(np.fft.rfft(frames, axis=1)).T  # (freq, time)
+    db = 20 * np.log10(mag + 1e-6)
+    db = np.clip((db - (db.max() - 80)) / 80, 0, 1)
+    img = (np.flipud(db) * 255).astype(np.uint8)
+    lut = np.stack([np.interp(np.arange(256), [0, 128, 255], c) for c in ([8, 120, 250], [6, 60, 230], [24, 160, 90])], 1)
+    ARTIFACTS.mkdir(parents=True, exist_ok=True)
+    name = f"{item.sha256[:16]}_spec.png"
+    Image.fromarray(lut[img].astype(np.uint8)).resize((min(img.shape[1], 1200), 256)).save(ARTIFACTS / name)
+    energy = mag.mean(axis=1)
+    cum = np.cumsum(energy) / max(float(energy.sum()), 1e-9)
+    bandwidth_khz = round(float(np.searchsorted(cum, 0.99)) * 16.0 / n, 1)  # 99% of energy below this
+    speech = round(float(audio_sig.speech_seconds(wav)), 1)
+    total = round(wav.size / 16000, 1)
+    limited = bandwidth_khz < 4.0
+    evidence = (f"Speech for {speech} s of {total} s. 99% of the sound energy is below {bandwidth_khz} kHz"
+                + (" (band-limited: typical of phone audio, heavy compression and some voice generators)." if limited
+                   else "."))
+    return [_signal("Spectrogram", Category.VOICE, "BAND_LIMITED" if limited else "SPECTRUM", evidence,
+                    flagged=limited, details={"artifact": f"/api/studio/artifacts/{name}", "speech_s": speech,
+                                              "duration_s": total, "bandwidth_khz": bandwidth_khz})]
+
+
+# ---------------------------------------------------------------- text
+
+
+_SENT = re.compile(r"[^.!?\n]+[.!?]?")
+_WORD = re.compile(r"[A-Za-zÀ-ɏऀ-ॿ']+")
+
+
+def text_style(item: Item) -> list[Signal]:
+    """Writing-style statistics: sentence-length variation ('burstiness'), vocabulary diversity, repeated phrases.
+    Very uniform writing is sometimes AI-generated, but editors and templates produce it too: context only. The
+    evidence line carries numbers, never the text."""
+    import statistics
+
+    text = item.path.read_text(errors="replace")[:200_000]
+    words = _WORD.findall(text.lower())
+    sents = [s for s in (x.strip() for x in _SENT.findall(text)) if len(_WORD.findall(s)) >= 3]
+    if len(words) < 40 or len(sents) < 3:
+        return [_signal("Writing style", Category.SEMANTIC, "TOO_SHORT",
+                        f"Too short for style statistics ({len(words)} words, {len(sents)} sentences).")]
+    lens = [len(_WORD.findall(s)) for s in sents]
+    mean = statistics.mean(lens)
+    burst = statistics.pstdev(lens) / mean if mean else 0.0
+    ttr = len(set(words[:400])) / len(words[:400])
+    grams = list(zip(words, words[1:], words[2:]))
+    repeat = 1 - len(set(grams)) / len(grams) if grams else 0.0
+    uniform = burst < 0.35 and len(sents) >= 6
+    d = {"words": len(words), "sentences": len(sents), "mean_sentence_words": round(mean, 1),
+         "burstiness": round(burst, 2), "vocabulary_diversity": round(ttr, 2), "repeated_trigrams": round(repeat, 3)}
+    evidence = (f"{len(words)} words in {len(sents)} sentences; sentence-length variation {burst:.2f} "
+                f"({'very uniform' if uniform else 'varied'}), vocabulary diversity {ttr:.2f}, "
+                f"repeated phrases {repeat:.1%}. Style alone never proves AI writing.")
+    return [_signal("Writing style", Category.SEMANTIC, "UNIFORM_STYLE" if uniform else "STYLE_STATS", evidence,
+                    flagged=uniform, details=d)]
+
+
 def bfree_scan(item: Item) -> list[Signal]:
     """Second-opinion AI-image detector trained with heavy JPEG augmentation (advisory; see corncam.bfree)."""
     from corncam import bfree
@@ -289,6 +457,10 @@ TOOLS: dict[str, Any] = {
     "hidden_data": hidden_data,
     "whatif_whatsapp": whatif_whatsapp,
     "bfree_scan": bfree_scan,
+    "media_profile": media_profile,
+    "frame_sheet": frame_sheet,
+    "audio_spectrogram": audio_spectrogram,
+    "text_style": text_style,
 }
 APPLIES: dict[str, set[MediaType]] = {
     "origin_metadata": {MediaType.IMAGE, MediaType.VIDEO, MediaType.AUDIO},
@@ -297,4 +469,8 @@ APPLIES: dict[str, set[MediaType]] = {
     "hidden_data": {MediaType.IMAGE, MediaType.TEXT},
     "whatif_whatsapp": {MediaType.IMAGE},
     "bfree_scan": {MediaType.IMAGE},
+    "media_profile": {MediaType.VIDEO, MediaType.AUDIO},
+    "frame_sheet": {MediaType.VIDEO},
+    "audio_spectrogram": {MediaType.AUDIO, MediaType.VIDEO},
+    "text_style": {MediaType.TEXT},
 }

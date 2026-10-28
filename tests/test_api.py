@@ -66,3 +66,17 @@ def test_studio_palette_lists_detectors_and_advisory_forensics():
     assert tools["hidden_data"]["advisory"] is True and set(tools["hidden_data"]["media"]) == {"image", "text"}
     assert "finish" not in tools
     assert client.get("/api/studio/artifacts/..%2Fetc.png").status_code == 404
+
+
+def test_every_studio_node_has_a_category_and_purpose():
+    from corncam.investigate import CATEGORIES
+
+    tools = client.get("/api/studio/tools").json()
+    assert all(t["category"] in CATEGORIES and t["purpose"] for t in tools)
+    kinds = {k: [t["name"] for t in tools if k in t["media"]] for k in ("image", "video", "audio", "text")}
+    assert "text_style" in kinds["text"] and "frame_sheet" in kinds["video"] and "audio_spectrogram" in kinds["audio"]
+
+
+def test_api_json_is_never_cached():
+    r = client.get("/api/studio/tools")
+    assert r.headers["cache-control"] == "no-store"

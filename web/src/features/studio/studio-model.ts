@@ -1,12 +1,15 @@
 import {
   AudioLinesIcon,
+  AudioWaveformIcon,
   BinaryIcon,
   BlocksIcon,
+  FileCogIcon,
   FileInputIcon,
   FilmIcon,
   FingerprintIcon,
   FlameIcon,
   GavelIcon,
+  ImagesIcon,
   LayersIcon,
   ScanFaceIcon,
   ScanEyeIcon,
@@ -14,6 +17,7 @@ import {
   Share2Icon,
   ShieldCheckIcon,
   SparklesIcon,
+  TypeIcon,
   type LucideIcon,
 } from "lucide-react"
 
@@ -36,6 +40,10 @@ export const TOOL_META: Record<string, { label: string; icon: LucideIcon }> = {
   hidden_data: { label: "Hidden-data decoders", icon: BinaryIcon },
   whatif_whatsapp: { label: "What-if: WhatsApp forward", icon: Share2Icon },
   bfree_scan: { label: "B-Free second opinion", icon: ScanEyeIcon },
+  media_profile: { label: "Technical profile", icon: FileCogIcon },
+  frame_sheet: { label: "Scanned frames", icon: ImagesIcon },
+  audio_spectrogram: { label: "Spectrogram", icon: AudioWaveformIcon },
+  text_style: { label: "Writing style", icon: TypeIcon },
 }
 
 export interface ToolRun {
