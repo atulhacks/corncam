@@ -34,6 +34,8 @@ _AI_TOOLS = [
     "made with ai", "ai generated", "ai-generated", "aigc",
 ]
 _TOOL_RE = re.compile("|".join(re.escape(t) for t in _AI_TOOLS), re.IGNORECASE)
+_FIELD_LABELS = (("info:", "the embedded text"), ("exif:", "the EXIF data"), ("format:", "the container tags"),
+                 ("stream", "the stream tags"))
 _SD_PARAMS_RE = re.compile(r"\bSteps:\s*\d+.*\bSampler:", re.IGNORECASE | re.DOTALL)  # A1111/ComfyUI PNG params
 
 _MAX_SCAN = 64 * 1024 * 1024  # read whole file up to 64 MB, else head + tail
@@ -116,8 +118,9 @@ def builtin_scan(item: Item) -> Signal:
                       Policy.TRUST, decisive=True, details=details, seconds=dt)
     if tool_hits or sd_params:
         where, tool = next(iter(tool_hits.items())) if tool_hits else ("info:parameters", "Stable Diffusion params")
-        # Field names can be chosen by whoever made the file (PNG text-chunk keys); only plain short names are echoed.
-        where = where if re.fullmatch(r"[A-Za-z0-9:_. -]{1,40}", where) else "a metadata field"
+        # Field names can be chosen by whoever made the file (PNG text-chunk keys), so they are never echoed: only
+        # where the match came from, as a fixed label. The tool name is a match from our own list (_AI_TOOLS).
+        where = next((label for prefix, label in _FIELD_LABELS if where.startswith(prefix)), "a metadata field")
         return Signal("Metadata scan", Category.PROVENANCE, 0.92, Rank.HIGH, "PROVENANCE_AI_TOOL",
                       f"File metadata names an AI generator: '{tool}' in {where}.",
                       Policy.TRUST, details=details, seconds=dt)
@@ -172,9 +175,11 @@ def aicheck_scan(item: Item) -> list[Signal]:
         score, rank, decisive = {"HIGH": (0.97, Rank.HIGH, True), "MEDIUM": (0.88, Rank.HIGH, False),
                                  "LOW": (0.65, Rank.UNCERTAIN, False)}[level]
         signals.append(Signal("aicheck metadata", Category.PROVENANCE, score, rank, "PROVENANCE_AI_MARKER",
-                              f"aicheck ({level.lower()} confidence): {text}",
+                              f"aicheck found an AI marker in the file's metadata ({level.lower()} confidence); "
+                              "the finding is shown on the page.",
                               Policy.TRUST if level != "LOW" else Policy.INCLUDE,
-                              decisive=decisive, details=details, seconds=dt))
+                              # aicheck's text can quote the file's own metadata: page only, never the AI
+                              decisive=decisive, details={**details, "aicheck_finding": text}, seconds=dt))
     if heuristic:
         level, text = max(heuristic, key=lambda f: _LEVELS.index(f[0]))
         text = re.sub(r"\s*\((strong|medium|weak) evidence\)", "", text, flags=re.IGNORECASE)  # we grade it ourselves

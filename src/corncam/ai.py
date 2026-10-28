@@ -17,9 +17,9 @@ from __future__ import annotations
 import hashlib
 import json
 import os
-import re
 import threading
 import time
+import unicodedata
 from pathlib import Path
 from typing import Any
 
@@ -217,14 +217,16 @@ def status() -> dict[str, Any]:
 # ---------------------------------------------------------------- what may be sent
 
 
-_CONTROL = re.compile(r"[\x00-\x1f\x7f\u200b-\u200f\u2028-\u202e\u2060-\u2064\ufeff]")
+_DROP_CATEGORIES = {"Cc", "Cf", "Co", "Cn", "Cs"}  # control, format (bidi, zero-width, tags), private, unassigned
 
 
 def safe_text(text: str | None, limit: int = 300) -> str:
     """Finding text for the model: control and invisible characters removed, length capped. Findings can echo strings
     written by whoever made the file (metadata tags, tool output), so they are data for the model, never instructions;
     the system prompts say so too."""
-    return _CONTROL.sub(" ", text or "").strip()[:limit]
+    norm = unicodedata.normalize("NFKC", text or "")
+    kept = "".join(" " if unicodedata.category(c) in _DROP_CATEGORIES else c for c in norm)
+    return " ".join(kept.split())[:limit]
 
 
 def evidence_summary(v: dict[str, Any]) -> dict[str, Any]:
