@@ -119,7 +119,7 @@ export function AppSidebar({
               </span>
               <span className="text-xs">
                 {health.status === "ok"
-                  ? "Online · offline-only"
+                  ? "API online · media stays local"
                   : health.status === "loading"
                     ? "Connecting…"
                     : "API offline"}

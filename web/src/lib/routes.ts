@@ -5,6 +5,7 @@ import {
   LayersIcon,
   LayoutDashboardIcon,
   ScanSearchIcon,
+  SparklesIcon,
   TrophyIcon,
   WorkflowIcon,
   type LucideIcon,
@@ -19,6 +20,7 @@ export type RouteId =
   | "report"
   | "benchmark"
   | "pipeline"
+  | "studio"
 
 export interface RouteDef {
   id: RouteId
@@ -91,6 +93,14 @@ export const ROUTES: RouteDef[] = [
     label: "Pipeline",
     description: "How each item is processed, step by step",
     icon: WorkflowIcon,
+    group: "Insights",
+    ready: true,
+  },
+  {
+    id: "studio",
+    label: "Studio",
+    description: "Ask the AI to build an investigation, or add your own nodes",
+    icon: SparklesIcon,
     group: "Insights",
     ready: true,
   },

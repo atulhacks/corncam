@@ -46,6 +46,11 @@ const OverviewPage = React.lazy(() =>
 const PoolPage = React.lazy(() =>
   import("@/features/pool/pool-page").then((m) => ({ default: m.PoolPage }))
 )
+const StudioPage = React.lazy(() =>
+  import("@/features/studio/studio-page").then((m) => ({
+    default: m.StudioPage,
+  }))
+)
 
 export function App() {
   const [route, navigate] = useRoute()
@@ -77,6 +82,7 @@ export function App() {
             {route === "benchmark" && <BenchmarkPage />}
             {route === "report" && <ReportPage />}
             {route === "pipeline" && <PipelinePage />}
+            {route === "studio" && <StudioPage />}
             {route === "forger" && <ForgerPage />}
             {route === "scoreboard" && <RevealPage onNavigate={navigate} />}
           </React.Suspense>

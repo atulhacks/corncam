@@ -58,3 +58,11 @@ def test_foreign_host_and_cross_site_origin_are_refused():
     ok = client.get("/api/health", headers={"origin": "http://localhost:5173"})
     assert ok.status_code == 200 and ok.headers["x-content-type-options"] == "nosniff"
     assert "sandbox" in ok.headers["content-security-policy"]
+
+
+def test_studio_palette_lists_detectors_and_advisory_forensics():
+    tools = {t["name"]: t for t in client.get("/api/studio/tools").json()}
+    assert tools["scan_whole_image"]["advisory"] is False and "image" in tools["scan_whole_image"]["media"]
+    assert tools["hidden_data"]["advisory"] is True and set(tools["hidden_data"]["media"]) == {"image", "text"}
+    assert "finish" not in tools
+    assert client.get("/api/studio/artifacts/..%2Fetc.png").status_code == 404

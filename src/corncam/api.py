@@ -110,6 +110,61 @@ async def investigate_upload(file: UploadFile) -> StreamingResponse:
     return StreamingResponse(events(), media_type="application/x-ndjson")
 
 
+_STUDIO_NODE = re.compile(r"^[a-z_]{3,40}$")
+_ARTIFACT = re.compile(r"^[0-9a-f]{16}_[a-z]+\.png$")
+
+
+@app.get("/api/studio/tools")
+def studio_tools() -> list[dict[str, Any]]:
+    """The node palette: every tool the Studio canvas (or the AI) can add, with the media types it applies to."""
+    from corncam import forensics
+    from corncam.investigate import ALLOWED, CORE, STUDIO_TOOLS, TOOLS
+
+    out = []
+    for t in TOOLS + STUDIO_TOOLS:
+        fn = t["function"]
+        if fn["name"] == "finish":
+            continue
+        kinds = (sorted(str(k) for k in forensics.APPLIES[fn["name"]]) if fn["name"] in forensics.APPLIES
+                 else sorted(str(k) for k, names in ALLOWED.items() if fn["name"] in names))
+        core = sorted(str(k) for k, steps in CORE.items() if any(n == fn["name"] for n, _ in steps))
+        out.append({"name": fn["name"], "description": fn["description"], "media": kinds,
+                    "advisory": fn["name"] in forensics.APPLIES, "core": core})
+    return out
+
+
+@app.post("/api/studio/investigate")
+async def studio_investigate(file: UploadFile, goal: str = Form(""), requested: str = Form("")) -> StreamingResponse:
+    """Studio run: the AI plans around the person's goal; nodes they placed on the canvas always run."""
+    from corncam.ingest import load_item
+    from corncam.investigate import investigate
+
+    nodes = [n for n in (x.strip() for x in requested.split(",")) if n and _STUDIO_NODE.match(n)][:12]
+    sha, path = await _store_upload(file)
+    name = file.filename or path.name
+
+    def events():
+        try:
+            for ev in investigate(load_item(path), goal=goal.strip()[:500] or "", requested=nodes):
+                if ev["type"] == "verdict":
+                    ev["verdict"] |= {"filename": name, "media_url": f"/api/media/{sha}",
+                                      "media_kind": str(detect_media_type(path))}
+                yield json.dumps(ev, default=str) + "\n"
+        except Exception as exc:  # noqa: BLE001 - surface the failure to the page instead of a dropped stream
+            yield json.dumps({"type": "error", "text": f"Studio run failed: {exc}"}) + "\n"
+
+    return StreamingResponse(events(), media_type="application/x-ndjson")
+
+
+@app.get("/api/studio/artifacts/{name}")
+def studio_artifact(name: str) -> FileResponse:
+    from corncam import forensics
+
+    if not _ARTIFACT.match(name) or not (forensics.ARTIFACTS / name).is_file():
+        raise HTTPException(404, "no such artifact")
+    return FileResponse(forensics.ARTIFACTS / name, media_type="image/png")
+
+
 @app.post("/api/detect")
 async def detect_upload(file: UploadFile) -> dict[str, Any]:
     sha, path = await _store_upload(file)

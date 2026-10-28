@@ -215,6 +215,45 @@ export type InvestigationEvent =
   | { type: "error"; text: string }
   | { type: "done" }
 
+/** A node the Studio canvas (or the AI) can add. Advisory nodes are shown as evidence and never vote. */
+export interface StudioTool {
+  name: string
+  description: string
+  media: MediaKind[]
+  advisory: boolean
+  /** media types for which this check always runs, whatever the AI or the person chooses */
+  core: MediaKind[]
+}
+
+/** POST a form and read the newline-delimited JSON event stream (investigator and Studio). */
+async function streamEvents(
+  url: string,
+  body: FormData,
+  onEvent: (e: InvestigationEvent) => void,
+  signal?: AbortSignal
+) {
+  const res = await fetch(url, { method: "POST", body, signal })
+  if (!res.ok || !res.body) {
+    throw new Error(
+      `${res.status} ${res.statusText}: ${(await res.text()).slice(0, 200)}`
+    )
+  }
+  const reader = res.body.getReader()
+  const decoder = new TextDecoder()
+  let buf = ""
+  for (;;) {
+    const { value, done } = await reader.read()
+    if (done) break
+    buf += decoder.decode(value, { stream: true })
+    let nl: number
+    while ((nl = buf.indexOf("\n")) >= 0) {
+      const line = buf.slice(0, nl).trim()
+      buf = buf.slice(nl + 1)
+      if (line) onEvent(JSON.parse(line) as InvestigationEvent)
+    }
+  }
+}
+
 export type Outcome = "caught" | "cleared" | "false_alarm" | "missed"
 
 export interface ReportRow {
@@ -318,30 +357,23 @@ export const api = {
   ) => {
     const body = new FormData()
     body.append("file", file)
-    const res = await fetch("/api/investigate", {
-      method: "POST",
-      body,
-      signal,
-    })
-    if (!res.ok || !res.body) {
-      throw new Error(
-        `${res.status} ${res.statusText}: ${(await res.text()).slice(0, 200)}`
-      )
-    }
-    const reader = res.body.getReader()
-    const decoder = new TextDecoder()
-    let buf = ""
-    for (;;) {
-      const { value, done } = await reader.read()
-      if (done) break
-      buf += decoder.decode(value, { stream: true })
-      let nl: number
-      while ((nl = buf.indexOf("\n")) >= 0) {
-        const line = buf.slice(0, nl).trim()
-        buf = buf.slice(nl + 1)
-        if (line) onEvent(JSON.parse(line) as InvestigationEvent)
-      }
-    }
+    await streamEvents("/api/investigate", body, onEvent, signal)
+  },
+  studioTools: () =>
+    fetch("/api/studio/tools").then((r) => json<StudioTool[]>(r)),
+  /** Studio run: the AI plans around `goal`; `requested` nodes always run. */
+  studioInvestigate: async (
+    file: File,
+    goal: string,
+    requested: string[],
+    onEvent: (e: InvestigationEvent) => void,
+    signal?: AbortSignal
+  ) => {
+    const body = new FormData()
+    body.append("file", file)
+    body.append("goal", goal)
+    body.append("requested", requested.join(","))
+    await streamEvents("/api/studio/investigate", body, onEvent, signal)
   },
   aiStatus: () => fetch("/api/ai/status").then((r) => json<AIStatus>(r)),
   aiExplain: (verdict: Verdict) =>

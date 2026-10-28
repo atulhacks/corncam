@@ -134,7 +134,8 @@ export function OverviewPage({
           <CardHeader>
             <CardTitle>Coverage</CardTitle>
             <CardDescription>
-              Media types the Detective can judge today.
+              Covered types are benchmarked on held-out data; experimental video
+              runs frames and voice, with its calls capped at "uncertain".
             </CardDescription>
           </CardHeader>
           <CardContent className="grid gap-3">
@@ -161,7 +162,11 @@ export function OverviewPage({
                   variant={covered.has(m) ? "secondary" : "outline"}
                   className="rounded-full"
                 >
-                  {covered.has(m) ? "covered" : "provenance only"}
+                  {covered.has(m)
+                    ? "covered"
+                    : m === "text"
+                      ? "provenance only"
+                      : "experimental"}
                 </Badge>
               </div>
             ))}
