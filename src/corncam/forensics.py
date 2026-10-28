@@ -275,12 +275,20 @@ def whatif_whatsapp(item: Item) -> list[Signal]:
                                                         "smaug_after": smaug})]
 
 
+def bfree_scan(item: Item) -> list[Signal]:
+    """Second-opinion AI-image detector trained with heavy JPEG augmentation (advisory; see corncam.bfree)."""
+    from corncam import bfree
+
+    return [bfree.bfree(item)]
+
+
 TOOLS: dict[str, Any] = {
     "origin_metadata": origin_metadata,
     "jpeg_forensics": jpeg_forensics,
     "error_level": error_level,
     "hidden_data": hidden_data,
     "whatif_whatsapp": whatif_whatsapp,
+    "bfree_scan": bfree_scan,
 }
 APPLIES: dict[str, set[MediaType]] = {
     "origin_metadata": {MediaType.IMAGE, MediaType.VIDEO, MediaType.AUDIO},
@@ -288,4 +296,5 @@ APPLIES: dict[str, set[MediaType]] = {
     "error_level": {MediaType.IMAGE},
     "hidden_data": {MediaType.IMAGE, MediaType.TEXT},
     "whatif_whatsapp": {MediaType.IMAGE},
+    "bfree_scan": {MediaType.IMAGE},
 }

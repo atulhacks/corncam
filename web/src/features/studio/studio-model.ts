@@ -9,6 +9,7 @@ import {
   GavelIcon,
   LayersIcon,
   ScanFaceIcon,
+  ScanEyeIcon,
   ScanIcon,
   Share2Icon,
   ShieldCheckIcon,
@@ -34,6 +35,7 @@ export const TOOL_META: Record<string, { label: string; icon: LucideIcon }> = {
   error_level: { label: "Error level analysis", icon: FlameIcon },
   hidden_data: { label: "Hidden-data decoders", icon: BinaryIcon },
   whatif_whatsapp: { label: "What-if: WhatsApp forward", icon: Share2Icon },
+  bfree_scan: { label: "B-Free second opinion", icon: ScanEyeIcon },
 }
 
 export interface ToolRun {

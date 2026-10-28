@@ -94,6 +94,12 @@ STUDIO_TOOLS: list[dict[str, Any]] = [
                        "the call would survive sharing. Slow (a full re-analysis). Advisory.",
         "parameters": {"type": "object", "properties": {}}}},
 ]
+STUDIO_TOOLS.append({"type": "function", "function": {
+    "name": "bfree_scan",
+    "description": "Second-opinion AI-image detector (B-Free) trained with heavy JPEG compression. Only worth running "
+                   "when compression history says the image looks like a forwarded chat image; on clean images it "
+                   "raises many false alarms. Advisory: never changes the verdict. Slow (~2 s).",
+    "parameters": {"type": "object", "properties": {}}}})
 FORENSIC = set(forensics.TOOLS)
 
 # Checks that always run for each media type, whatever the AI chooses (it can add depth, never remove coverage).
@@ -113,7 +119,7 @@ LANES = {  # Pipeline canvas lane categories each tool lights up
     "check_provenance": ["provenance", "visual_noise"], "scan_whole_image": ["generative_ai"],
     "check_faces": ["faces"], "scan_video_frames": ["generative_ai", "faces"], "check_voice": ["voice"],
     "origin_metadata": ["origin"], "jpeg_forensics": ["origin"], "error_level": ["decoders"],
-    "hidden_data": ["decoders"], "whatif_whatsapp": ["whatif"],
+    "hidden_data": ["decoders"], "whatif_whatsapp": ["whatif"], "bfree_scan": ["generative_ai"],
 }
 
 

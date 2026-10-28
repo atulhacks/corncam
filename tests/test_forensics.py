@@ -37,3 +37,14 @@ def test_raw_metadata_text_never_reaches_the_ai(tmp_path):
     assert "Ignore" not in s.evidence and "authentic" not in s.evidence  # evidence is what the AI reads
     assert "stable diffusion" in s.evidence  # allow-listed tool name only
     assert s.details["make"].startswith("Ignore")  # raw value kept for the page
+
+
+def test_bfree_is_advisory_and_degrades_when_not_installed(tmp_path, monkeypatch):
+    from corncam import bfree
+
+    monkeypatch.setattr(bfree, "available", lambda: False)
+    p = tmp_path / "x.png"
+    Image.new("RGB", (32, 32)).save(p)
+    s = forensics.TOOLS["bfree_scan"](load_item(p))[0]
+    assert s.policy is Policy.IGNORE and s.score is None and s.reason_code == "NOT_INSTALLED"
+    assert forensics.APPLIES["bfree_scan"] == {forensics.MediaType.IMAGE}
