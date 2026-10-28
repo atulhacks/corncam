@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **Project name: Corncam.** It is a deepfake Forger + Detective covering all four modalities the brief allows: **image, video, audio and text**. The repo folder is named `croncam`.
 
-This is a hackathon project (X AI Tech Ideathon), **problem statement 3: "Deepfake Arena: Red Team vs Blue Team"**. Git repo on branch `main`, pushed to the private GitHub repo `harshit-vashisht/corncam` (commit/push only when the user says so; `web/` is part of the main repo, its scaffold `.git` was removed).
+This is a hackathon project (X AI Tech Ideathon), **problem statement 3: "Deepfake Arena: Red Team vs Blue Team"**. Git repo on branch `main`, pushed to the private GitHub repo `atulhacks/corncam` (remote `origin`; an older copy is on `harshit-vashisht/corncam`, remote `harshit`) (commit/push only when the user says so; `web/` is part of the main repo, its scaffold `.git` was removed).
 
 Commands (see `Makefile`):
 - Setup and weights: `make models`. The DF40 checkpoint is downloaded separately with gdown into `models/df40/`.
