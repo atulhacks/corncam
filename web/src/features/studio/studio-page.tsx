@@ -149,7 +149,7 @@ export function StudioPage() {
 
   return (
     // Full-bleed workspace (n8n): the canvas takes all the space under the top bar; the side panel scrolls itself.
-    <div className="@container/main flex w-full flex-col gap-3 px-4 py-4 lg:h-[calc(100svh-4rem)]">
+    <div className="@container/main flex w-full flex-col gap-3 px-4 py-4 md:px-6 xl:px-10 lg:h-[calc(100svh-4rem)]">
       <header className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1">
         <div className="flex items-baseline gap-3">
           <h1 className="font-heading text-2xl font-medium tracking-tight">

@@ -70,7 +70,7 @@ export function App() {
         <main>
           <React.Suspense
             fallback={
-              <div className="mx-auto grid w-full max-w-6xl gap-8 px-4 pt-10">
+              <div className="mx-auto grid w-full max-w-[1600px] gap-8 px-4 pt-10 md:px-6 xl:px-10">
                 <Skeleton className="h-24" />
                 <Skeleton className="h-64" />
               </div>

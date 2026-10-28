@@ -8,7 +8,7 @@ import { routeById, type RouteId } from "@/lib/routes"
 /**
  * Flush top bar with a bottom hairline ("proof desk" shell).
  * Grid contract: 64px tall so its bottom hairline continues the sidebar header's; contents sit in the page column
- * (max-w-6xl px-4) so the trigger and actions align with page content edges.
+ * (max-w-[1600px], px-4 md:px-6 xl:px-10) so the trigger and actions align with page content edges.
  */
 export function TopBar({
   route,
@@ -22,7 +22,7 @@ export function TopBar({
   const r = routeById(route)
   return (
     <header className="sticky top-0 z-30 h-16 shrink-0 border-b bg-background">
-      <div className="mx-auto flex h-full w-full max-w-6xl items-center gap-3 px-4">
+      <div className="mx-auto flex h-full w-full max-w-[1600px] items-center gap-3 px-4 md:px-6 xl:px-10">
         {/* -ml-1.5: optically align the trigger's glyph (not its hit box) with the page's left edge */}
         <SidebarTrigger className="-ml-1.5" />
         <Separator

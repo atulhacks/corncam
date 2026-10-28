@@ -99,7 +99,7 @@ export function RevealPage({
   }
 
   return (
-    <div className="@container/main mx-auto grid w-full max-w-6xl grid-cols-1 gap-8 px-4 pt-10 pb-16">
+    <div className="@container/main mx-auto grid w-full max-w-[1600px] grid-cols-1 gap-8 px-4 pt-10 md:px-6 xl:px-10 pb-16">
       <PageHeader
         eyebrow="Arena · live"
         title="Reveal & Scoreboard"
