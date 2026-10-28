@@ -43,7 +43,7 @@ async def lifespan(_: FastAPI) -> AsyncIterator[None]:
 
 app = FastAPI(title="Corncam API", version="0.1.0", lifespan=lifespan)
 
-_LOCAL = {"localhost", "127.0.0.1", "[::1]", "testserver"}  # testserver: FastAPI TestClient, not resolvable
+_LOCAL = {"localhost", "127.0.0.1", "[::1]"}
 # Pool items and uploads are attacker-chosen files: never let one run as a page on this origin.
 _MEDIA_HEADERS = {"X-Content-Type-Options": "nosniff",
                   "Content-Security-Policy": "sandbox; default-src 'none'; img-src 'self'; media-src 'self'"}
