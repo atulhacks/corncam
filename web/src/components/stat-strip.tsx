@@ -40,7 +40,8 @@ export function StatStrip({
       {stats.map((s) => (
         <div
           key={s.label}
-          className="grid content-start gap-2 px-5 py-5 first:pl-0"
+          // Left-column cells sit flush with the rule: cells 1 and 3 in the 2x2 layout, only cell 1 when 4 across.
+          className="grid content-start gap-2 px-5 py-5 odd:pl-0 @3xl/main:nth-3:pl-5"
         >
           <dt className="eyebrow">{s.label}</dt>
           <dd

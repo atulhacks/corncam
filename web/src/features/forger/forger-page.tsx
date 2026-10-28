@@ -295,7 +295,7 @@ export function ForgerPage() {
   }
 
   return (
-    <div className="@container/main mx-auto grid w-full max-w-6xl gap-8 px-4 pt-10 pb-16">
+    <div className="@container/main mx-auto grid w-full max-w-6xl grid-cols-1 gap-8 px-4 pt-10 pb-16">
       <PageHeader
         eyebrow="Red team"
         title="Forger Studio"
@@ -338,7 +338,7 @@ export function ForgerPage() {
           </Card>
         )}
 
-      <div className="grid gap-6 @4xl/main:grid-cols-[20rem_1fr]">
+      <div className="grid gap-6 @4xl/main:grid-cols-[20rem_minmax(0,1fr)]">
         <Card className="bg-card/80">
           <CardHeader>
             <CardTitle>Personas</CardTitle>

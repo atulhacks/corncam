@@ -99,7 +99,7 @@ export function RevealPage({
   }
 
   return (
-    <div className="@container/main mx-auto grid w-full max-w-6xl gap-8 px-4 pt-10 pb-16">
+    <div className="@container/main mx-auto grid w-full max-w-6xl grid-cols-1 gap-8 px-4 pt-10 pb-16">
       <PageHeader
         eyebrow="Arena · live"
         title="Reveal & Scoreboard"
@@ -128,7 +128,7 @@ export function RevealPage({
         <Skeleton className="h-96" />
       ) : !report || rows.length === 0 ? (
         <Card className="bg-card/80">
-          <CardContent className="grid gap-3 pt-6 text-sm text-muted-foreground">
+          <CardContent className="grid gap-3 text-sm text-muted-foreground">
             <p>
               The reveal needs the organisers' answer key. Import it on the
               Post-game Report page; it scores every analysed Pool item.
@@ -141,7 +141,7 @@ export function RevealPage({
           </CardContent>
         </Card>
       ) : (
-        <div className="grid gap-6 @4xl/main:grid-cols-[1fr_20rem]">
+        <div className="grid gap-6 @4xl/main:grid-cols-[minmax(0,1fr)_20rem]">
           <Card className="bg-card/80">
             <CardHeader>
               <CardDescription className="tabular-nums">

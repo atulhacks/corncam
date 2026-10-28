@@ -105,7 +105,7 @@ export function PoolPage() {
   const items = (pool.data?.items ?? []).filter((i) => matches(i, filter))
 
   return (
-    <div className="@container/main mx-auto grid w-full max-w-6xl gap-8 px-4 pt-10 pb-16">
+    <div className="@container/main mx-auto grid w-full max-w-6xl grid-cols-1 gap-8 px-4 pt-10 pb-16">
       <PageHeader
         eyebrow="Blue team · arena items"
         title="Evidence Pool"
@@ -163,13 +163,13 @@ export function PoolPage() {
 
       {s && s.total > 0 && (
         <Card className="bg-card/80">
-          <CardContent className="grid gap-3 pt-6">
+          <CardContent className="grid gap-3">
             <div className="flex flex-wrap items-center justify-between gap-2 text-sm">
               <span>
                 {s.done} of {s.total} analysed
                 {s.failed > 0 && ` · ${s.failed} failed`}
               </span>
-              <span className="flex gap-2">
+              <span className="flex flex-wrap gap-2">
                 <Button
                   asChild
                   variant="outline"

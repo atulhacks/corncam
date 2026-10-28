@@ -75,7 +75,7 @@ export function DetectivePage() {
       : null
 
   return (
-    <div className="@container/main mx-auto grid w-full max-w-6xl gap-8 px-4 pt-10 pb-16">
+    <div className="@container/main mx-auto grid w-full max-w-6xl grid-cols-1 gap-8 px-4 pt-10 pb-16">
       <PageHeader
         eyebrow="Forensics desk"
         title="Is it real?"
@@ -87,7 +87,7 @@ export function DetectivePage() {
         }
       />
 
-      <div className="grid items-start gap-6 @4xl/main:grid-cols-[1.05fr_1fr]">
+      <div className="grid items-start gap-6 @4xl/main:grid-cols-[minmax(0,1.05fr)_minmax(0,1fr)]">
         <Card className="relative gap-4 overflow-hidden bg-card/80 p-4">
           {preview ? (
             <>

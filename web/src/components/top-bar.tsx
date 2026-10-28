@@ -44,13 +44,14 @@ export function TopBar({
             onClick={onOpenCommand}
           >
             <SearchIcon aria-hidden /> Go to…
-            <kbd className="ml-2 rounded border bg-muted px-1.5 font-mono text-[10px]">
+            <kbd className="ml-2 hidden rounded border bg-muted px-1.5 font-mono text-[10px] md:inline">
               ⌘K
             </kbd>
           </Button>
           {route !== "detective" && (
-            <Button size="sm" onClick={onAnalyse}>
-              <UploadIcon aria-hidden /> Analyse an item
+            <Button size="sm" onClick={onAnalyse} aria-label="Analyse an item">
+              <UploadIcon aria-hidden />
+              <span className="hidden sm:inline">Analyse an item</span>
             </Button>
           )}
         </div>

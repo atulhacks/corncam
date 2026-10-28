@@ -54,7 +54,9 @@ export function App() {
   return (
     <SidebarProvider>
       <AppSidebar route={route} onNavigate={navigate} />
-      <SidebarInset>
+      {/* min-w-0: a flex child defaults to min-width:auto, so the top bar's nowrap breadcrumb (or any wide page
+          content) would push the page past the viewport instead of truncating/scrolling inside it. */}
+      <SidebarInset className="min-w-0">
         <TopBar
           route={route}
           onOpenCommand={() => setCommandOpen(true)}

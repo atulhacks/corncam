@@ -65,7 +65,7 @@ function LogRow({
   spinning?: boolean
 }) {
   return (
-    <li className="grid enter grid-cols-[1.75rem_1fr] gap-3">
+    <li className="grid enter grid-cols-[1.75rem_minmax(0,1fr)] gap-3">
       <span
         className="grid size-7 place-items-center rounded-full border bg-card"
         style={tone ? { color: tone, borderColor: tone } : undefined}
@@ -178,7 +178,7 @@ export function Investigator({ pipeline }: { pipeline: Pipeline }) {
         live={verdict ? undefined : live}
         height={480}
       />
-      <div className="grid gap-4 @4xl/main:grid-cols-[1fr_22rem]">
+      <div className="grid gap-4 @4xl/main:grid-cols-[minmax(0,1fr)_22rem]">
         <Card className="gap-4 bg-card/80 p-5">
           <div className="flex items-center justify-between gap-3">
             <h3 className="text-sm font-semibold">Investigation log</h3>

@@ -178,7 +178,7 @@ export function ReportPage() {
   }
 
   return (
-    <div className="@container/main mx-auto grid w-full max-w-6xl gap-8 px-4 pt-10 pb-16">
+    <div className="@container/main mx-auto grid w-full max-w-6xl grid-cols-1 gap-8 px-4 pt-10 pb-16">
       <PageHeader
         eyebrow="Arena · after the game"
         title="Post-game Report"
@@ -234,7 +234,7 @@ export function ReportPage() {
         <p className="text-sm text-fake">Could not load the report: {error}</p>
       ) : !report ? (
         <Card className="bg-card/80">
-          <CardContent className="grid gap-3 pt-6 text-sm text-muted-foreground">
+          <CardContent className="grid gap-3 text-sm text-muted-foreground">
             {[
               "Analyse the arena's items in the Evidence Pool.",
               "After the reveal, import the organisers' answer key: a CSV with a file name or sha256 column and a fake/real label column.",

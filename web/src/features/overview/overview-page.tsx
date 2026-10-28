@@ -53,7 +53,7 @@ export function OverviewPage({
   const covered = new Set(health.data?.covered_media ?? [])
 
   return (
-    <div className="@container/main mx-auto grid w-full max-w-6xl gap-8 px-4 pt-10 pb-16">
+    <div className="@container/main mx-auto grid w-full max-w-6xl grid-cols-1 gap-8 px-4 pt-10 pb-16">
       <PageHeader
         eyebrow="Arena status"
         title="Arena overview"
@@ -67,7 +67,7 @@ export function OverviewPage({
 
       <KpiCards reports={reports} />
 
-      <div className="grid gap-4 @4xl/main:grid-cols-[1.4fr_1fr]">
+      <div className="grid gap-4 @4xl/main:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
         <Card className="bg-card/80">
           <CardHeader>
             <CardTitle>Evidence Pool</CardTitle>
