@@ -76,9 +76,8 @@ const HANDLE = "!size-2.5 !border-2 !border-background !bg-muted-foreground"
 const SUB_HANDLE =
   "!size-2 !rotate-45 !rounded-none !border-0 !bg-muted-foreground"
 // Phones get a shorter frame: the graph is wide, so a tall canvas only adds empty space.
-const CANVAS_H = "h-[360px] md:h-[clamp(440px,64vh,720px)]"
-const PANEL_MAX_H =
-  "max-h-[calc(360px-1.5rem)] md:max-h-[calc(clamp(440px,64vh,720px)-1.5rem)]"
+const CANVAS_H = "h-full"
+const PANEL_MAX_H = "max-h-[min(calc(100svh-10rem),40rem)]"
 
 function toneOf(run: ToolRun): Tone | undefined {
   if (run.status !== "done") return undefined

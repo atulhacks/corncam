@@ -2,7 +2,6 @@ import * as React from "react"
 import { CheckIcon, LoaderIcon, SparklesIcon } from "lucide-react"
 import { toast } from "sonner"
 
-import { PageHeader } from "@/components/page-header"
 import { VerdictPill } from "@/components/verdict-pill"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
@@ -149,110 +148,222 @@ export function StudioPage() {
   }
 
   return (
-    <div className="@container/main mx-auto grid w-full max-w-6xl grid-cols-1 gap-8 px-4 pt-10 pb-16">
-      <PageHeader
-        eyebrow="Insights · AI studio"
-        title="Studio"
-        description="Ask a question about any image, video, audio clip or text. The AI builds the investigation as nodes from our detectors and forensic tools; add your own nodes too. The verdict always comes from calibrated fusion, never from the AI."
-      />
+    // Full-bleed workspace (n8n): the canvas takes all the space under the top bar; the side panel scrolls itself.
+    <div className="@container/main flex w-full flex-col gap-3 px-4 py-4 lg:h-[calc(100svh-4rem)]">
+      <header className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1">
+        <div className="flex items-baseline gap-3">
+          <h1 className="font-heading text-2xl font-medium tracking-tight">
+            Studio
+          </h1>
+          <span className="eyebrow">AI investigation canvas</span>
+        </div>
+        <p className="text-xs text-pretty text-muted-foreground">
+          The AI plans the checks; calibrated fusion decides the verdict.
+        </p>
+      </header>
 
-      <div className="grid items-start gap-6 @5xl/main:grid-cols-[17rem_minmax(0,1fr)]">
-        <Card className="gap-6 bg-card/80 p-5 @5xl/main:sticky @5xl/main:top-20">
-          <section className="grid gap-2">
-            <h2 className="eyebrow">1 · Evidence</h2>
-            {file ? (
-              <div className="flex items-center gap-3 rounded-lg border p-2">
-                {file.kind === "image" ? (
-                  <img
-                    src={file.url}
-                    alt=""
-                    className="size-12 shrink-0 rounded-md object-cover outline outline-1 -outline-offset-1 outline-white/10"
-                  />
-                ) : (
-                  <span className="grid size-12 shrink-0 place-items-center rounded-md bg-muted text-xs text-muted-foreground capitalize">
-                    {file.kind}
-                  </span>
-                )}
-                <div className="grid min-w-0 gap-0.5">
-                  <span className="truncate text-sm font-medium">
-                    {file.file.name}
-                  </span>
-                  <span className="text-xs text-muted-foreground capitalize">
-                    {file.kind}
-                  </span>
-                </div>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="ml-auto"
-                  disabled={status === "running"}
-                  onClick={() => {
-                    URL.revokeObjectURL(file.url)
-                    setFile(null)
-                    setEvents([])
-                    setStatus("idle")
-                  }}
-                >
-                  Change
-                </Button>
-              </div>
-            ) : (
-              <Dropzone onFile={choose} compact />
-            )}
-          </section>
-
-          <section className="grid gap-2">
-            <h2 className="eyebrow">2 · Your question</h2>
-            <Textarea
-              value={goal}
-              onChange={(e) => setGoal(e.target.value)}
-              placeholder="e.g. Where did this photo come from, and was the face edited?"
-              maxLength={500}
-              rows={3}
-              aria-label="What do you want to know about this file?"
-            />
-            <div className="flex flex-wrap gap-1.5">
-              {SUGGESTIONS.map((s) => (
-                <button
-                  key={s.label}
-                  type="button"
-                  onClick={() => setGoal(s.goal)}
-                  aria-pressed={goal === s.goal}
-                  className={cn(
-                    "rounded-full border px-2.5 py-1 text-xs whitespace-nowrap transition-colors",
-                    goal === s.goal
-                      ? "border-brand/60 bg-brand/10 text-foreground"
-                      : "text-muted-foreground hover:border-brand/60 hover:text-foreground"
+      <div className="grid min-h-0 flex-1 grid-cols-1 gap-4 lg:grid-cols-[20rem_minmax(0,1fr)]">
+        <aside className="flex min-h-0 flex-col gap-4 lg:overflow-y-auto lg:pr-1 [&>*]:shrink-0">
+          <Card className="gap-6 bg-card/80 p-5">
+            <section className="grid gap-2">
+              <h2 className="eyebrow">1 · Evidence</h2>
+              {file ? (
+                <div className="flex items-center gap-3 rounded-lg border p-2">
+                  {file.kind === "image" ? (
+                    <img
+                      src={file.url}
+                      alt=""
+                      className="size-12 shrink-0 rounded-md object-cover outline outline-1 -outline-offset-1 outline-white/10"
+                    />
+                  ) : (
+                    <span className="grid size-12 shrink-0 place-items-center rounded-md bg-muted text-xs text-muted-foreground capitalize">
+                      {file.kind}
+                    </span>
                   )}
-                >
-                  {s.label}
-                </button>
-              ))}
-            </div>
-          </section>
+                  <div className="grid min-w-0 gap-0.5">
+                    <span className="truncate text-sm font-medium">
+                      {file.file.name}
+                    </span>
+                    <span className="text-xs text-muted-foreground capitalize">
+                      {file.kind}
+                    </span>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="ml-auto"
+                    disabled={status === "running"}
+                    onClick={() => {
+                      URL.revokeObjectURL(file.url)
+                      setFile(null)
+                      setEvents([])
+                      setStatus("idle")
+                    }}
+                  >
+                    Change
+                  </Button>
+                </div>
+              ) : (
+                <Dropzone onFile={choose} compact />
+              )}
+            </section>
 
-          <section className="grid gap-2">
-            <div className="flex items-baseline justify-between gap-2">
-              <h2 className="eyebrow">3 · Nodes</h2>
-              <span className="text-xs text-muted-foreground">
-                {picked.length ? `${picked.length} added by you` : "optional"}
-              </span>
-            </div>
+            <section className="grid gap-2">
+              <h2 className="eyebrow">2 · Your question</h2>
+              <Textarea
+                value={goal}
+                onChange={(e) => setGoal(e.target.value)}
+                placeholder="e.g. Where did this photo come from, and was the face edited?"
+                maxLength={500}
+                rows={3}
+                aria-label="What do you want to know about this file?"
+              />
+              <div className="flex flex-wrap gap-1.5">
+                {SUGGESTIONS.map((s) => (
+                  <button
+                    key={s.label}
+                    type="button"
+                    onClick={() => setGoal(s.goal)}
+                    aria-pressed={goal === s.goal}
+                    className={cn(
+                      "rounded-full border px-2.5 py-1 text-xs whitespace-nowrap transition-colors",
+                      goal === s.goal
+                        ? "border-brand/60 bg-brand/10 text-foreground"
+                        : "text-muted-foreground hover:border-brand/60 hover:text-foreground"
+                    )}
+                  >
+                    {s.label}
+                  </button>
+                ))}
+              </div>
+            </section>
+
+            <section className="grid gap-2">
+              <div className="flex items-baseline justify-between gap-2">
+                <h2 className="eyebrow">3 · Nodes</h2>
+                <span className="text-xs text-muted-foreground">
+                  {picked.length ? `${picked.length} added by you` : "optional"}
+                </span>
+              </div>
+              <p className="text-xs text-pretty text-muted-foreground">
+                Add checks with{" "}
+                <span className="font-medium text-foreground">+</span> on the
+                canvas; the AI adds the rest while it investigates.
+              </p>
+            </section>
+
             <p className="text-xs text-pretty text-muted-foreground">
-              Add checks with{" "}
-              <span className="font-medium text-foreground">+</span> on the
-              canvas; the AI adds the rest while it investigates.
+              {usingAI
+                ? `${ai?.provider} reads only detector scores and our findings, never the file. Decoded payloads stay on this page.`
+                : "AI is not configured, so the standard checks and your nodes run in a fixed order."}
             </p>
-          </section>
+          </Card>
+          <Card className="gap-3 bg-card/80 p-5">
+            <h3 className="text-sm font-semibold">Investigation log</h3>
+            {events.length === 0 ? (
+              <p className="text-sm text-muted-foreground">
+                {file
+                  ? "Ready. Ask a question or add nodes, then run."
+                  : "Drop a file to begin."}
+              </p>
+            ) : (
+              <ol className="grid gap-2 text-sm" aria-live="polite">
+                {events.map((e, i) => {
+                  if (e.type === "thought")
+                    return (
+                      <li
+                        key={i}
+                        className="flex enter gap-2 text-muted-foreground"
+                      >
+                        <SparklesIcon
+                          className="mt-0.5 size-3.5 shrink-0 text-brand"
+                          aria-hidden
+                        />
+                        <span className="text-pretty">{e.text}</span>
+                      </li>
+                    )
+                  if (e.type === "tool")
+                    return (
+                      <li key={i} className="flex enter gap-2">
+                        {events
+                          .slice(i + 1)
+                          .some(
+                            (x) => x.type === "tool_result" && x.tool === e.tool
+                          ) ? (
+                          <CheckIcon
+                            className="mt-0.5 size-3.5 shrink-0"
+                            aria-hidden
+                          />
+                        ) : (
+                          <LoaderIcon
+                            className="mt-0.5 size-3.5 shrink-0 animate-spin"
+                            aria-hidden
+                          />
+                        )}
+                        <span>
+                          {(TOOL_META[e.tool] ?? TOOL_META.unknown).label}
+                        </span>
+                      </li>
+                    )
+                  if (e.type === "verdict")
+                    return (
+                      <li
+                        key={i}
+                        className="flex enter flex-wrap items-center gap-2"
+                      >
+                        Fusion decided{" "}
+                        <VerdictPill tone={toneFor(e.verdict)}>
+                          {e.verdict.label}
+                        </VerdictPill>
+                        <span className="tabular-nums">
+                          {Math.round(e.verdict.confidence * 100)}%
+                        </span>
+                      </li>
+                    )
+                  if (e.type === "error")
+                    return (
+                      <li key={i} className="text-fake">
+                        {e.text}
+                      </li>
+                    )
+                  return null
+                })}
+              </ol>
+            )}
+          </Card>
 
-          <p className="text-xs text-pretty text-muted-foreground">
-            {usingAI
-              ? `${ai?.provider} reads only detector scores and our findings, never the file. Decoded payloads stay on this page.`
-              : "AI is not configured, so the standard checks and your nodes run in a fixed order."}
-          </p>
-        </Card>
+          <Card className="gap-2 bg-card/80 p-5 text-sm">
+            <h3 className="flex items-center gap-2 font-semibold">
+              <SparklesIcon className="size-4 text-brand" aria-hidden />
+              {explanation?.type === "explanation" && explanation.headline
+                ? explanation.headline
+                : "What the AI concluded"}
+            </h3>
+            {explanation?.type === "explanation" ? (
+              <>
+                <p className="leading-relaxed text-pretty text-muted-foreground">
+                  {explanation.explanation}
+                </p>
+                {explanation.caveat && (
+                  <p className="text-xs text-pretty text-muted-foreground">
+                    <span className="font-medium text-foreground">
+                      Could be wrong if:{" "}
+                    </span>
+                    {explanation.caveat}
+                  </p>
+                )}
+              </>
+            ) : (
+              <p className="text-muted-foreground">
+                The plain-language explanation appears here when the run
+                finishes. Click any node on the canvas for its evidence, maps
+                and decoded data.
+              </p>
+            )}
+          </Card>
+        </aside>
 
-        <div className="grid min-w-0 gap-4">
+        <div className="order-first h-[420px] min-w-0 lg:order-none lg:h-auto lg:min-h-0">
           <StudioCanvas
             fileName={file?.file.name}
             media={media}
@@ -276,113 +387,6 @@ export function StudioPage() {
               running: status === "running",
             }}
           />
-
-          <div className="grid gap-4 @4xl/main:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
-            <Card className="gap-3 bg-card/80 p-5">
-              <h3 className="text-sm font-semibold">Investigation log</h3>
-              {events.length === 0 ? (
-                <p className="text-sm text-muted-foreground">
-                  {file
-                    ? "Ready. Ask a question or add nodes, then run."
-                    : "Drop a file to begin."}
-                </p>
-              ) : (
-                <ol className="grid gap-2 text-sm" aria-live="polite">
-                  {events.map((e, i) => {
-                    if (e.type === "thought")
-                      return (
-                        <li
-                          key={i}
-                          className="flex enter gap-2 text-muted-foreground"
-                        >
-                          <SparklesIcon
-                            className="mt-0.5 size-3.5 shrink-0 text-brand"
-                            aria-hidden
-                          />
-                          <span className="text-pretty">{e.text}</span>
-                        </li>
-                      )
-                    if (e.type === "tool")
-                      return (
-                        <li key={i} className="flex enter gap-2">
-                          {events
-                            .slice(i + 1)
-                            .some(
-                              (x) =>
-                                x.type === "tool_result" && x.tool === e.tool
-                            ) ? (
-                            <CheckIcon
-                              className="mt-0.5 size-3.5 shrink-0"
-                              aria-hidden
-                            />
-                          ) : (
-                            <LoaderIcon
-                              className="mt-0.5 size-3.5 shrink-0 animate-spin"
-                              aria-hidden
-                            />
-                          )}
-                          <span>
-                            {(TOOL_META[e.tool] ?? TOOL_META.unknown).label}
-                          </span>
-                        </li>
-                      )
-                    if (e.type === "verdict")
-                      return (
-                        <li
-                          key={i}
-                          className="flex enter flex-wrap items-center gap-2"
-                        >
-                          Fusion decided{" "}
-                          <VerdictPill tone={toneFor(e.verdict)}>
-                            {e.verdict.label}
-                          </VerdictPill>
-                          <span className="tabular-nums">
-                            {Math.round(e.verdict.confidence * 100)}%
-                          </span>
-                        </li>
-                      )
-                    if (e.type === "error")
-                      return (
-                        <li key={i} className="text-fake">
-                          {e.text}
-                        </li>
-                      )
-                    return null
-                  })}
-                </ol>
-              )}
-            </Card>
-
-            <Card className="gap-2 bg-card/80 p-5 text-sm">
-              <h3 className="flex items-center gap-2 font-semibold">
-                <SparklesIcon className="size-4 text-brand" aria-hidden />
-                {explanation?.type === "explanation" && explanation.headline
-                  ? explanation.headline
-                  : "What the AI concluded"}
-              </h3>
-              {explanation?.type === "explanation" ? (
-                <>
-                  <p className="leading-relaxed text-pretty text-muted-foreground">
-                    {explanation.explanation}
-                  </p>
-                  {explanation.caveat && (
-                    <p className="text-xs text-pretty text-muted-foreground">
-                      <span className="font-medium text-foreground">
-                        Could be wrong if:{" "}
-                      </span>
-                      {explanation.caveat}
-                    </p>
-                  )}
-                </>
-              ) : (
-                <p className="text-muted-foreground">
-                  The plain-language explanation appears here when the run
-                  finishes. Click any node on the canvas for its evidence, maps
-                  and decoded data.
-                </p>
-              )}
-            </Card>
-          </div>
         </div>
       </div>
     </div>
