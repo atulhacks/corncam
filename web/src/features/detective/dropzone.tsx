@@ -8,9 +8,12 @@ const ACCEPT = "image/*,video/*,audio/*,.txt,.md"
 export function Dropzone({
   onFile,
   disabled,
+  compact,
 }: {
   onFile: (f: File) => void
   disabled?: boolean
+  /** a short row-style target for side panels (Studio) instead of the full-height page target */
+  compact?: boolean
 }) {
   const [over, setOver] = React.useState(false)
   const inputId = React.useId()
@@ -34,7 +37,10 @@ export function Dropzone({
         if (!disabled) pick(e.dataTransfer.files)
       }}
       className={cn(
-        "flex min-h-[340px] cursor-pointer flex-col items-center justify-center gap-4 rounded-2xl border-2 border-dashed p-8 text-center transition-colors",
+        "flex cursor-pointer rounded-2xl border-2 border-dashed transition-colors",
+        compact
+          ? "items-center gap-3 rounded-xl p-3 text-left"
+          : "min-h-[340px] flex-col items-center justify-center gap-4 p-8 text-center",
         "focus-within:outline-2 focus-within:outline-offset-4 focus-within:outline-ring",
         over
           ? "border-brand bg-brand/10"
@@ -42,14 +48,31 @@ export function Dropzone({
         disabled && "pointer-events-none opacity-60"
       )}
     >
-      <span className="grid size-14 place-items-center rounded-2xl bg-brand/15 text-brand">
-        <UploadCloudIcon className="size-7" aria-hidden />
+      <span
+        className={cn(
+          "grid shrink-0 place-items-center bg-brand/15 text-brand",
+          compact ? "size-10 rounded-lg" : "size-14 rounded-2xl"
+        )}
+      >
+        <UploadCloudIcon
+          className={compact ? "size-5" : "size-7"}
+          aria-hidden
+        />
       </span>
-      <span className="space-y-1">
-        <span className="block text-base font-medium">
-          Drop an evidence item, or click to choose
+      <span className={compact ? "grid gap-0.5" : "space-y-1"}>
+        <span
+          className={cn("block font-medium", compact ? "text-sm" : "text-base")}
+        >
+          {compact
+            ? "Drop a file or click"
+            : "Drop an evidence item, or click to choose"}
         </span>
-        <span className="block text-sm text-muted-foreground">
+        <span
+          className={cn(
+            "block text-muted-foreground",
+            compact ? "text-xs" : "text-sm"
+          )}
+        >
           Image · video · audio · text — analysed on this machine, never
           uploaded
         </span>

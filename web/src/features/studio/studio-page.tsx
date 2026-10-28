@@ -1,18 +1,9 @@
 import * as React from "react"
-import {
-  CheckIcon,
-  LoaderIcon,
-  PlayIcon,
-  PlusIcon,
-  RotateCcwIcon,
-  SparklesIcon,
-  SquareIcon,
-} from "lucide-react"
+import { CheckIcon, LoaderIcon, SparklesIcon } from "lucide-react"
 import { toast } from "sonner"
 
 import { PageHeader } from "@/components/page-header"
 import { VerdictPill } from "@/components/verdict-pill"
-import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Textarea } from "@/components/ui/textarea"
@@ -31,11 +22,14 @@ import { toneFor } from "@/lib/verdict-style"
 import { StudioCanvas } from "./studio-canvas"
 import { TOOL_META, deriveRuns } from "./studio-model"
 
-const SUGGESTIONS = [
-  "Where did this come from?",
-  "Was a face swapped or edited?",
-  "Would the verdict survive a WhatsApp forward?",
-  "Is anything hidden in it?",
+const SUGGESTIONS: { label: string; goal: string }[] = [
+  { label: "Where's it from?", goal: "Where did this come from?" },
+  { label: "Face edited?", goal: "Was a face swapped or edited?" },
+  {
+    label: "Survives WhatsApp?",
+    goal: "Would the verdict survive a WhatsApp forward?",
+  },
+  { label: "Hidden data?", goal: "Is anything hidden in it?" },
 ]
 
 function kindOf(f: File): MediaKind {
@@ -73,7 +67,6 @@ export function StudioPage() {
   }, [])
 
   const media = file?.kind
-  const available = tools.filter((t) => !media || t.media.includes(media))
   const advisory = React.useMemo(
     () => new Set(tools.filter((t) => t.advisory).map((t) => t.name)),
     [tools]
@@ -141,9 +134,7 @@ export function StudioPage() {
   const lastThought = thoughts.at(-1)
   const usingAI = Boolean(ai?.configured)
   const planner = {
-    title: usingAI
-      ? `AI planner · ${ai?.provider ?? "DeepSeek"}`
-      : "Fixed plan",
+    model: usingAI ? (ai?.provider ?? "DeepSeek") : "Fixed plan",
     subtitle:
       status === "running" && !verdict
         ? lastThought?.type === "thought"
@@ -165,8 +156,8 @@ export function StudioPage() {
         description="Ask a question about any image, video, audio clip or text. The AI builds the investigation as nodes from our detectors and forensic tools; add your own nodes too. The verdict always comes from calibrated fusion, never from the AI."
       />
 
-      <div className="grid items-start gap-6 @5xl/main:grid-cols-[19rem_minmax(0,1fr)]">
-        <Card className="gap-5 bg-card/80 p-5">
+      <div className="grid items-start gap-6 @5xl/main:grid-cols-[17rem_minmax(0,1fr)]">
+        <Card className="gap-6 bg-card/80 p-5 @5xl/main:sticky @5xl/main:top-20">
           <section className="grid gap-2">
             <h2 className="eyebrow">1 · Evidence</h2>
             {file ? (
@@ -206,7 +197,7 @@ export function StudioPage() {
                 </Button>
               </div>
             ) : (
-              <Dropzone onFile={choose} />
+              <Dropzone onFile={choose} compact />
             )}
           </section>
 
@@ -223,12 +214,18 @@ export function StudioPage() {
             <div className="flex flex-wrap gap-1.5">
               {SUGGESTIONS.map((s) => (
                 <button
-                  key={s}
+                  key={s.label}
                   type="button"
-                  onClick={() => setGoal(s)}
-                  className="rounded-full border px-2.5 py-1 text-xs text-muted-foreground transition-colors hover:border-brand/60 hover:text-foreground"
+                  onClick={() => setGoal(s.goal)}
+                  aria-pressed={goal === s.goal}
+                  className={cn(
+                    "rounded-full border px-2.5 py-1 text-xs whitespace-nowrap transition-colors",
+                    goal === s.goal
+                      ? "border-brand/60 bg-brand/10 text-foreground"
+                      : "text-muted-foreground hover:border-brand/60 hover:text-foreground"
+                  )}
                 >
-                  {s}
+                  {s.label}
                 </button>
               ))}
             </div>
@@ -236,85 +233,18 @@ export function StudioPage() {
 
           <section className="grid gap-2">
             <div className="flex items-baseline justify-between gap-2">
-              <h2 className="eyebrow">3 · Your nodes</h2>
+              <h2 className="eyebrow">3 · Nodes</h2>
               <span className="text-xs text-muted-foreground">
-                {picked.length ? `${picked.length} added` : "optional"}
+                {picked.length ? `${picked.length} added by you` : "optional"}
               </span>
             </div>
-            <ul className="grid grid-cols-1 gap-1">
-              {available.map((t) => {
-                const meta = TOOL_META[t.name] ?? TOOL_META.unknown
-                const core = media ? t.core.includes(media) : false
-                const on = core || picked.includes(t.name)
-                const Icon = meta.icon
-                return (
-                  <li key={t.name}>
-                    <button
-                      type="button"
-                      disabled={core || status === "running"}
-                      onClick={() => toggle(t.name)}
-                      aria-pressed={on}
-                      title={t.description}
-                      className={cn(
-                        "flex w-full items-center gap-2.5 rounded-md border px-2.5 py-2 text-left text-sm transition-colors",
-                        on
-                          ? "border-brand/50 bg-brand/10"
-                          : "hover:bg-foreground/[0.04]",
-                        core && "cursor-default opacity-70"
-                      )}
-                    >
-                      <Icon
-                        className="size-4 shrink-0 text-brand"
-                        aria-hidden
-                      />
-                      <span className="min-w-0 flex-1 truncate">
-                        {meta.label}
-                      </span>
-                      {t.advisory && (
-                        <Badge
-                          variant="outline"
-                          className="rounded-full text-[10px]"
-                        >
-                          advisory
-                        </Badge>
-                      )}
-                      {core ? (
-                        <span className="text-[10px] text-muted-foreground">
-                          always
-                        </span>
-                      ) : on ? (
-                        <CheckIcon className="size-4 text-brand" aria-hidden />
-                      ) : (
-                        <PlusIcon
-                          className="size-4 text-muted-foreground"
-                          aria-hidden
-                        />
-                      )}
-                    </button>
-                  </li>
-                )
-              })}
-            </ul>
+            <p className="text-xs text-pretty text-muted-foreground">
+              Add checks with{" "}
+              <span className="font-medium text-foreground">+</span> on the
+              canvas; the AI adds the rest while it investigates.
+            </p>
           </section>
 
-          {status === "running" ? (
-            <Button variant="outline" onClick={stop}>
-              <SquareIcon aria-hidden /> Stop
-            </Button>
-          ) : (
-            <Button disabled={!file} onClick={() => void run()}>
-              {finished ? (
-                <RotateCcwIcon aria-hidden />
-              ) : (
-                <PlayIcon aria-hidden />
-              )}
-              {finished
-                ? "Run again"
-                : usingAI
-                  ? "Investigate with AI"
-                  : "Run checks"}
-            </Button>
-          )}
           <p className="text-xs text-pretty text-muted-foreground">
             {usingAI
               ? `${ai?.provider} reads only detector scores and our findings, never the file. Decoded payloads stay on this page.`
@@ -329,6 +259,22 @@ export function StudioPage() {
             runs={runs}
             planner={planner}
             verdict={verdict}
+            tools={tools}
+            picked={picked}
+            onToggle={toggle}
+            action={{
+              label:
+                status === "running"
+                  ? "Stop"
+                  : finished
+                    ? "Run again"
+                    : usingAI
+                      ? "Investigate with AI"
+                      : "Run checks",
+              onClick: status === "running" ? stop : () => void run(),
+              disabled: !file && status !== "running",
+              running: status === "running",
+            }}
           />
 
           <div className="grid gap-4 @4xl/main:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
