@@ -45,6 +45,7 @@ export interface ToolRun {
   why: string
   signals: Signal[]
   seconds?: number
+  cached?: boolean
 }
 
 const WHY_CORE = "Required check for this media type."
@@ -92,6 +93,7 @@ export function deriveRuns(
           status: "done",
           signals: e.signals,
           seconds: e.seconds,
+          cached: e.cached,
         })
     }
   }

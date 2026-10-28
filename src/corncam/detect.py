@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from corncam import calibrate, fusion
+from corncam import cache, calibrate, fusion
 from corncam import explain as explain_mod
 from corncam.ingest import Item, load_item
 from corncam.schema import MediaType, Signal, Verdict
@@ -32,9 +32,16 @@ def collect_signals(item) -> list[Signal]:
     return signals
 
 
-def detect(path: str | Path) -> Verdict:
+def detect(path: str | Path, use_cache: bool = True) -> Verdict:
+    """Analyse one file. Detector signals are cached by the file's SHA-256 (corncam.cache), so the same file is never
+    re-scanned; fusion and calibration always re-run, so they apply to cached evidence too."""
     item = load_item(path)
-    return fuse(item, collect_signals(item))
+    signals = cache.get(item.sha256, "detect") if use_cache else None
+    if signals is None:
+        signals = collect_signals(item)
+        if use_cache:
+            cache.put(item.sha256, "detect", signals)
+    return fuse(item, signals)
 
 
 def fuse(item: Item, signals: list[Signal]) -> Verdict:

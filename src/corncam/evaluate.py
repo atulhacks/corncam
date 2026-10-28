@@ -52,7 +52,7 @@ def evaluate(items: list[tuple[Path, int, str]]) -> dict[str, Any]:
     rows = []
     for path, y, model in items:
         t0 = time.perf_counter()
-        v = detect(path)
+        v = detect(path, use_cache=False)  # a benchmark measures the current code, never stored results
         rows.append({"file": path.name, "y": y, "model": model, "p_fake": v.p_fake, "p_raw": v.p_raw, "label": v.label,
                      "tier": str(v.tier), "reason_code": v.reason_code, "seconds": time.perf_counter() - t0})
     y = [r["y"] for r in rows]

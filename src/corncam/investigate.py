@@ -24,7 +24,7 @@ from collections.abc import Iterator
 from dataclasses import asdict
 from typing import Any
 
-from corncam import ai, forensics
+from corncam import ai, cache, forensics
 from corncam.detect import fuse
 from corncam.ingest import Item
 from corncam.schema import MediaType, Signal
@@ -209,12 +209,16 @@ def investigate(item: Item, goal: str | None = None,
         ran.add(key)
         yield {"type": "tool", "tool": name, "args": args, "lanes": LANES.get(name, []), "why": why}
         t0 = time.perf_counter()
-        new = run_tool(item, name, args)
+        new = cache.get(item.sha256, f"tool:{name}", args)
+        cached = new is not None
+        if new is None:
+            new = run_tool(item, name, args)
+            cache.put(item.sha256, f"tool:{name}", new, args)
         for s in new:
             # a deeper rerun replaces the shallower result of the same detector
             (advisory if name in FORENSIC else signals)[s.name] = s
         yield {"type": "tool_result", "tool": name, "signals": [asdict(s) for s in new],
-               "seconds": round(time.perf_counter() - t0, 2), "_brief": _brief(new)}
+               "seconds": round(time.perf_counter() - t0, 2), "cached": cached, "_brief": _brief(new)}
 
     allowed = allowed_tools(item.media_type, studio)
     used_ai = ai.configured()

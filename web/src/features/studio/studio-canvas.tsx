@@ -487,7 +487,7 @@ export function StudioCanvas({
           icon: meta.icon,
           label: meta.label,
           sub: subOf(r),
-          tag: TAG[r.by],
+          tag: r.cached ? `${TAG[r.by]} · cached` : TAG[r.by],
           status: r.status,
           tone: toneOf(r),
           dashed: r.advisory,

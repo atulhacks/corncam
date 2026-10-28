@@ -209,7 +209,14 @@ export type InvestigationEvent =
       lanes: string[]
       why: string
     }
-  | { type: "tool_result"; tool: string; signals: Signal[]; seconds: number }
+  | {
+      type: "tool_result"
+      tool: string
+      signals: Signal[]
+      seconds: number
+      /** true when the evidence came from the on-disk cache (same file seen before) */
+      cached?: boolean
+    }
   | { type: "verdict"; verdict: Verdict }
   | ({ type: "explanation" } & Partial<AIExplanation>)
   | { type: "error"; text: string }
