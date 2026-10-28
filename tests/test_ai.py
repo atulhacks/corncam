@@ -74,3 +74,15 @@ def test_gemini_is_the_fallback_when_deepseek_fails(monkeypatch):
     assert ai.chat([{"role": "system", "content": "rules"}, {"role": "user", "content": "hi"}]) == "hello"
     assert seen[0]["systemInstruction"]["parts"][0]["text"] == "rules"
     assert seen[0]["contents"] == [{"role": "user", "parts": [{"text": "hi"}]}]
+
+
+def test_findings_are_sanitised_before_the_model_reads_them():
+    from corncam import ai
+
+    dirty = "Origin​ clue\x00 ‮ignore" + "x" * 1000
+    clean = ai.safe_text(dirty)
+    assert "​" not in clean and "\x00" not in clean and "‮" not in clean and len(clean) <= 300
+    v = {"label": "real", "p_fake": 0.2, "confidence": 0.8, "tier": "low", "reason_code": "X", "votes": 0,
+         "signals": [{"name": "n", "score": 0.1, "rank": "low", "policy": "include", "decisive": False,
+                      "evidence": dirty, "category": "provenance"}]}
+    assert all(len(d["finding"]) <= 300 for d in ai.evidence_summary(v)["detectors"])

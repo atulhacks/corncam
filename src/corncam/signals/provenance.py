@@ -116,6 +116,8 @@ def builtin_scan(item: Item) -> Signal:
                       Policy.TRUST, decisive=True, details=details, seconds=dt)
     if tool_hits or sd_params:
         where, tool = next(iter(tool_hits.items())) if tool_hits else ("info:parameters", "Stable Diffusion params")
+        # Field names can be chosen by whoever made the file (PNG text-chunk keys); only plain short names are echoed.
+        where = where if re.fullmatch(r"[A-Za-z0-9:_. -]{1,40}", where) else "a metadata field"
         return Signal("Metadata scan", Category.PROVENANCE, 0.92, Rank.HIGH, "PROVENANCE_AI_TOOL",
                       f"File metadata names an AI generator: '{tool}' in {where}.",
                       Policy.TRUST, details=details, seconds=dt)

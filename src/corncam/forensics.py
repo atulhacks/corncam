@@ -88,15 +88,18 @@ def origin_metadata(item: Item) -> list[Signal]:
     else:
         return [_signal("Origin metadata", Category.PROVENANCE, "NOT_APPLICABLE", "No metadata to read for text.")]
 
+    # The evidence line is what the AI reads, so it carries only categorical facts. Raw tag text (make, software,
+    # encoder...) is written by whoever made the file and could carry instructions; it stays in `details`, which only
+    # the page shows. The AI-tool name is safe: it is a match from our fixed list, not the file's own text.
     parts = []
     if found.get("make") or found.get("model"):
-        parts.append(f"camera {found.get('make', '')} {found.get('model', '')}".strip())
-    for key, label in (("software", "software"), ("creator_tool", "edited with"), ("encoder", "encoder"),
-                       ("handler_name", "handler")):
+        parts.append("a camera make/model tag")
+    for key, label in (("software", "a software tag"), ("creator_tool", "an editing-tool tag"),
+                       ("encoder", "a container encoder tag"), ("handler_name", "a handler tag")):
         if found.get(key):
-            parts.append(f"{label} {found[key]}")
+            parts.append(label)
     if found.get("generator_hint"):
-        parts.append(f"names an AI tool ({found['generator_hint']})")
+        parts.append(f"a tag naming an AI tool ({found['generator_hint'].lower()})")
     if found.get("c2pa_marker"):
         parts.append("Content Credentials data present")
     if not parts:
@@ -104,7 +107,7 @@ def origin_metadata(item: Item) -> list[Signal]:
                     "generators alike, so this alone proves nothing.")
         code = "NO_ORIGIN_METADATA"
     else:
-        evidence = "Origin clues: " + "; ".join(parts) + "."
+        evidence = "Origin clues present: " + "; ".join(parts) + " (values shown on the page)."
         code = "GENERATOR_NAMED" if found.get("generator_hint") else "ORIGIN_METADATA"
     return [_signal("Origin metadata", Category.PROVENANCE, code, evidence,
                     flagged=bool(found.get("generator_hint")), details=found)]
