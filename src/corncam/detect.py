@@ -16,6 +16,7 @@ COVERED = {MediaType.IMAGE, MediaType.AUDIO}
 # Calibration is fitted per media type; a type without its own fit uses the detectors' probabilities as-is.
 CALIBRATED = {MediaType.IMAGE}
 _CALIBRATION = calibrate.load()  # None until `corncam calibrate` has been run
+_CAL_COMPRESSED = calibrate.load(calibrate.COMPRESSED_FILE)  # None unless fitted on compressed tuning data
 
 
 def collect_signals(item) -> list[Signal]:
@@ -42,7 +43,10 @@ def fuse(item: Item, signals: list[Signal]) -> Verdict:
     p_raw = min(max(fusion.p_fake(signals), 0.01), 0.99)
     # Decisive provenance is hard evidence, not a score: it is not re-calibrated.
     use_cal = item.media_type in CALIBRATED and not any(s.decisive for s in signals)
-    p = calibrate.apply(p_raw, _CALIBRATION, calibrate.pool_prior()) if use_cal else p_raw
+    params = _CALIBRATION
+    if use_cal and _CAL_COMPRESSED and item.media_type is MediaType.IMAGE and calibrate.is_compressed(item.path):
+        params = _CAL_COMPRESSED
+    p = calibrate.apply(p_raw, params, calibrate.pool_prior()) if use_cal else p_raw
     p = min(max(p, 0.01), 0.99)  # never claim certainty
     # Strictly above: an item with no usable evidence (p = 0.5 exactly) is called real. A false alarm costs -5,
     # a miss -3, so the tie goes to "real". Found when music-only real clips were called fake.

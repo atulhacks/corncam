@@ -49,3 +49,12 @@ def test_ai_failures_are_503_not_500(monkeypatch, tmp_path):
     assert r.status_code == 503 and "not configured" in r.json()["detail"]
     r = client.post("/api/ai/ask", json={"verdict": {"signals": []}, "question": "why?"})
     assert r.status_code == 503
+
+
+def test_foreign_host_and_cross_site_origin_are_refused():
+    assert client.get("/api/health", headers={"host": "evil.example"}).status_code == 403  # DNS rebinding
+    r = client.post("/api/forger/candidates/abc/launder", headers={"origin": "https://evil.example"})
+    assert r.status_code == 403  # cross-site POST
+    ok = client.get("/api/health", headers={"origin": "http://localhost:5173"})
+    assert ok.status_code == 200 and ok.headers["x-content-type-options"] == "nosniff"
+    assert "sandbox" in ok.headers["content-security-policy"]

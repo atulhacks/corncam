@@ -22,10 +22,44 @@ def _logit(p: float) -> float:
     return math.log(p / (1 - p))
 
 
-def load() -> dict[str, float] | None:
-    if CALIBRATION_FILE.is_file():
-        return json.loads(CALIBRATION_FILE.read_text())
+def load(path: Path = CALIBRATION_FILE) -> dict[str, float] | None:
+    if path.is_file():
+        return json.loads(path.read_text())
     return None
+
+
+# Heavily re-compressed images (chat forwards) are a separate domain: Smaug loses most of its signal there
+# (held-out stress run, 28 Oct 2026: misses 14% -> 54%), so they get their own Platt fit, used only when present.
+COMPRESSED_FILE = Path(__file__).with_name("calibration_compressed.json")
+_STD_LUMA = [16, 11, 10, 16, 24, 40, 51, 61, 12, 12, 14, 19, 26, 58, 60, 55, 14, 13, 16, 24, 40, 57, 69, 56,
+             14, 17, 22, 29, 51, 87, 80, 62, 18, 22, 37, 56, 68, 109, 103, 77, 24, 35, 55, 64, 81, 104, 113, 92,
+             49, 64, 78, 87, 103, 121, 120, 101, 72, 92, 95, 98, 112, 100, 103, 99]
+
+
+def jpeg_quality(path: Path) -> int | None:
+    """Estimated libjpeg quality from the luminance quantisation table; None if not a JPEG."""
+    from PIL import Image
+
+    try:
+        with Image.open(path) as im:
+            if im.format != "JPEG" or not getattr(im, "quantization", None):
+                return None
+            table = im.quantization[0]
+    except OSError:
+        return None
+    scale = 100 * sum(table) / sum(_STD_LUMA)
+    return round((200 - scale) / 2 if scale <= 100 else 5000 / scale)
+
+
+def is_compressed(path: Path) -> bool:
+    """A chat-forward-like image: JPEG at quality <= 80 and long side <= 1024 px."""
+    from PIL import Image
+
+    q = jpeg_quality(path)
+    if q is None or q > 80:
+        return False
+    with Image.open(path) as im:
+        return max(im.size) <= 1024
 
 
 def pool_prior() -> float | None:

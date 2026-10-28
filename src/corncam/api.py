@@ -7,14 +7,15 @@ import json
 import re
 import shutil
 import threading
-from collections.abc import AsyncIterator
+from collections.abc import AsyncIterator, Awaitable, Callable
 from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Any
+from urllib.parse import urlsplit
 
-from fastapi import FastAPI, Form, HTTPException, UploadFile
+from fastapi import FastAPI, Form, HTTPException, Request, UploadFile
 from fastapi.concurrency import run_in_threadpool
-from fastapi.responses import FileResponse, Response, StreamingResponse
+from fastapi.responses import FileResponse, JSONResponse, Response, StreamingResponse
 from pydantic import BaseModel
 
 from corncam import ai as ai_mod
@@ -41,6 +42,24 @@ async def lifespan(_: FastAPI) -> AsyncIterator[None]:
 
 
 app = FastAPI(title="Corncam API", version="0.1.0", lifespan=lifespan)
+
+_LOCAL = {"localhost", "127.0.0.1", "[::1]", "testserver"}  # testserver: FastAPI TestClient, not resolvable
+# Pool items and uploads are attacker-chosen files: never let one run as a page on this origin.
+_MEDIA_HEADERS = {"X-Content-Type-Options": "nosniff",
+                  "Content-Security-Policy": "sandbox; default-src 'none'; img-src 'self'; media-src 'self'"}
+
+
+@app.middleware("http")
+async def local_only(request: Request, call_next: Callable[[Request], Awaitable[Response]]) -> Response:
+    """Block DNS rebinding (foreign Host) and cross-site requests (foreign Origin) to this unauthenticated API."""
+    host = (request.headers.get("host") or "").rsplit(":", 1)[0]
+    origin = request.headers.get("origin")
+    if host not in _LOCAL or (origin and urlsplit(origin).hostname not in {"localhost", "127.0.0.1", "::1"}):
+        return JSONResponse({"detail": "local requests only"}, status_code=403)
+    response = await call_next(request)
+    if request.url.path.startswith("/api/"):
+        response.headers.update(_MEDIA_HEADERS)
+    return response
 
 
 @app.get("/api/health")

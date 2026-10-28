@@ -91,3 +91,18 @@ def test_pixel_noise_cannot_convict_on_its_own():
     signals = [_named("Smaug AI-image detector", 0.2, Category.GENERATIVE_AI),
                _named("aicheck pixel heuristics", 0.6, Category.VISUAL_NOISE, Policy.INCLUDE)]
     assert abs(fusion.p_fake(signals) - 0.2) < 1e-6
+
+
+def test_chat_forwards_are_recognised_as_compressed(tmp_path):
+    from PIL import Image
+
+    from corncam import calibrate
+
+    img = Image.new("RGB", (1200, 900), (100, 120, 140))
+    img.save(tmp_path / "clean.jpg", quality=95)
+    img.resize((720, 540)).save(tmp_path / "fwd.jpg", quality=70)
+    img.save(tmp_path / "x.png")
+    assert calibrate.jpeg_quality(tmp_path / "clean.jpg") == 95
+    assert calibrate.jpeg_quality(tmp_path / "fwd.jpg") == 70
+    assert calibrate.is_compressed(tmp_path / "fwd.jpg")
+    assert not calibrate.is_compressed(tmp_path / "clean.jpg") and not calibrate.is_compressed(tmp_path / "x.png")
