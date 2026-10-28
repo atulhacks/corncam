@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **Project name: Corncam.** It is a deepfake Forger + Detective covering all four modalities the brief allows: **image, video, audio and text**. The repo folder is named `croncam`.
 
-This is a hackathon project (X AI Tech Ideathon), **problem statement 3: "Deepfake Arena: Red Team vs Blue Team"**. Git repo on branch `main`, no commits yet (commit only when the user says so).
+This is a hackathon project (X AI Tech Ideathon), **problem statement 3: "Deepfake Arena: Red Team vs Blue Team"**. Git repo on branch `main`, pushed to the private GitHub repo `harshit-vashisht/corncam` (commit/push only when the user says so; `web/` is part of the main repo, its scaffold `.git` was removed).
 
 Commands (see `Makefile`):
 - Setup and weights: `make models`. The DF40 checkpoint is downloaded separately with gdown into `models/df40/`.
@@ -14,7 +14,11 @@ Commands (see `Makefile`):
 - Detect: `uv run corncam detect <files>`. Also `corncam api`, `corncam eval`, `corncam eval-folder`, `corncam calibrate`.
 - Web UI: `make api` (FastAPI :8000) plus `make web` (Vite :5173). Check with `make web-check`.
 
-Detector status, measured: image AUC 0.968 held-out (Smaug + calibration); audio 80/80 (pellav2); GenD face branch trusted. DF40 is `Policy.IGNORE`: it is shown but never votes, because it scored a known-real face 0.997. Video currently runs the audio track only; there is no text detector.
+Detector status, measured: image AUC 0.974 held-out (v5: category-max fusion + refit Platt; 91% accuracy, 4% false alarms, 14% misses); audio 80/80 (pellav2); GenD face branch trusted. DF40 is `Policy.IGNORE`: it is shown but never votes, because it scored a known-real face 0.997. Video runs smart-selected frames (Smaug + GenD) plus the audio track; there is no text detector.
+
+**Known weakness: chat-forward re-compression** (measured 28 Oct 2026). Re-scoring the same 100 held-out images after a WhatsApp-style forward (720 px, JPEG q80 then q70; `forger.LAUNDER_PRESETS["whatsapp"]`): AUC 0.974 -> 0.788, misses 14% -> 54%, false alarms 4% -> 2% (`data/eval/reddit_100_v5_whatsapp_stress.json`, role "stress" on the Benchmark page). A separate Platt fit for compressed images (gate `calibrate.is_compressed`: JPEG q<=80 and long side <=1024) was tried, fitted on 87 tuning images and checked on the held-out stress set: misses 54% -> 32% but false alarms 2% -> 18%; it only pays if the pool is >~42% fake, so it is **off** (no `calibration_compressed.json`). Fixing this needs a detector trained on compressed fakes, not a threshold shift.
+
+**Red-team finding:** Nano Banana (`gemini-nano-banana-2.1`) fakes stay at P(fake) 0.99 on our Detective under every laundering we tried; a local FLUX.2 klein fake laundered with the WhatsApp preset drops to 0.37 (called real). The Forger's Launder button makes both a phone and a WhatsApp copy so self-play can keep the one that slips through.
 
 Files:
 - `problemstatement/Problem Statements X AI Tech Ideathon.pdf`: the official brief, with 6 problem statements; #3 is on page 3. Poppler/`pdftotext` is not installed and the system Python has no PDF library. To read it, install `pypdf` into a venv in the scratchpad and extract the text there.
