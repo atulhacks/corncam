@@ -8,7 +8,7 @@ inpainting) plus heavy augmentation including JPEG. DINOv2-registers ViT, five 5
 only (fine for the hackathon; must be replaced before commercial use). Read the actual code (`main_bfree_single.py`,
 `networks/wrapper5crops.py`, `utils/normalization.py`).
 
-**Correctness check:** weights verified by the published MD5; our loader reproduces the authors' demo logits exactly
+**Correctness check:** weights verified by the published MD5 and pinned by SHA-256 (code too, checked before every load); our loader reproduces the authors' demo logits exactly
 (img0000 -5.937, img0001 -4.442, img0002 4.431, img0003 3.850). `torch.load(weights_only=True)`.
 
 **Held-out results (same 100 OpenFake Reddit images as our Detective; logit > 0 = fake):**

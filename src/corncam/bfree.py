@@ -7,7 +7,7 @@ re-compression. DINOv2-with-registers ViT; averages five 504 px crops; outputs o
 
 Licence: GRIP-UNINA, nonprofit and informational use only, with attribution. Fine for the hackathon; it must be replaced
 or licensed before any commercial use. The code is cloned (not vendored) into models/bfree/repo at a pinned commit.
-Set up with `make bfree` (clone + weights with an MD5 check).
+Set up with `make bfree` (pinned full commit; code and weights SHA-256 checked before every load).
 
 Measured on our held-out OpenFake Reddit 100 (28 Oct 2026; docs/BFREE_EVAL.md): alone it does NOT generalise to modern
 generators (AUC 0.66 clean with 36% false alarms; 0.70 on WhatsApp-forwarded copies). Combined with Smaug on forwarded
@@ -28,8 +28,10 @@ from corncam.schema import Category, Policy, Rank, Signal
 
 ROOT = Path(__file__).resolve().parents[2]
 BFREE_DIR = ROOT / "models" / "bfree"
-REPO_COMMIT = "c6a9f89"  # grip-unina/B-Free, 2026-01-14
-WEIGHTS_MD5 = "f3f53fa647848b16cf81c913f148a198"
+REPO_COMMIT = "c6a9f898782fb466b29af01f21960b67415afb0e"  # grip-unina/B-Free, 2026-01-14
+# We execute the authors' wrapper and unpickle their weights, so both are pinned by SHA-256 and checked before loading.
+WRAPPER_SHA256 = "1f4de65b82b33c3864ab368836bab009a18f9bf0f828335777272645f236d60b"
+WEIGHTS_SHA256 = "5948ca78f4d94e820c250d24cdf155035b4a85960443800bfe6bb7f06bffe947"
 MODEL = "BFREE_dino2reg4"
 
 _NORM = {
@@ -38,6 +40,16 @@ _NORM = {
     "xception": ([0.5, 0.5, 0.5], [0.5, 0.5, 0.5]),
     "none": None,
 }
+
+
+def _sha256(path: Path) -> str:
+    import hashlib
+
+    h = hashlib.sha256()
+    with path.open("rb") as f:
+        for chunk in iter(lambda: f.read(1 << 20), b""):
+            h.update(chunk)
+    return h.hexdigest()
 
 
 def available() -> bool:
@@ -63,13 +75,16 @@ def _model():
     arch = cfg["arch"]
     if not arch.startswith("timm_c5i504_"):
         raise RuntimeError(f"unexpected B-Free arch {arch}")
-    spec = importlib.util.spec_from_file_location(
-        "bfree_wrapper5crops", BFREE_DIR / "repo" / "code" / "networks" / "wrapper5crops.py")
+    wrapper = BFREE_DIR / "repo" / "code" / "networks" / "wrapper5crops.py"
+    weights = BFREE_DIR / "weights" / MODEL / cfg["weights_file"]
+    if _sha256(wrapper) != WRAPPER_SHA256 or _sha256(weights) != WEIGHTS_SHA256:
+        raise RuntimeError("B-Free code or weights do not match the pinned SHA-256; re-run `make bfree`")
+    spec = importlib.util.spec_from_file_location("bfree_wrapper5crops", wrapper)
     module = importlib.util.module_from_spec(spec)  # type: ignore[arg-type]
     spec.loader.exec_module(module)  # type: ignore[union-attr]
     net = module.Wrapper5crops(timm.create_model(arch[12:], num_classes=1, pretrained=False), 504)
     # weights_only: tensors and plain containers only, so a tampered checkpoint cannot run code when unpickled
-    state = torch.load(BFREE_DIR / "weights" / MODEL / cfg["weights_file"], map_location="cpu", weights_only=True)
+    state = torch.load(weights, map_location="cpu", weights_only=True)
     net.load_state_dict(state["model"])
     device = _device()
     return net.to(device).eval(), cfg["norm_type"], device
