@@ -1,0 +1,7 @@
+{
+  "a": 1.1280460265039844,
+  "b": 2.0285522319060383,
+  "n_tune": 87,
+  "train_prior": 0.5632,
+  "source": "reddit_tune_seed2_v4.json"
+}

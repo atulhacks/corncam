@@ -1,0 +1,298 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+@import "@fontsource-variable/geist";
+@import "@fontsource-variable/geist-mono";
+@import "@fontsource-variable/newsreader";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --font-heading: "Newsreader Variable", Georgia, serif;
+  --font-sans: "Geist Variable", sans-serif;
+  --font-mono: "Geist Mono Variable", ui-monospace, monospace;
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --color-foreground: var(--foreground);
+  --color-background: var(--background);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
+}
+
+:root {
+  --background: oklch(1 0 0);
+  --foreground: oklch(0.145 0 0);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.145 0 0);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.145 0 0);
+  --primary: oklch(0.205 0 0);
+  --primary-foreground: oklch(0.985 0 0);
+  --secondary: oklch(0.97 0 0);
+  --secondary-foreground: oklch(0.205 0 0);
+  --muted: oklch(0.97 0 0);
+  --muted-foreground: oklch(0.556 0 0);
+  --accent: oklch(0.97 0 0);
+  --accent-foreground: oklch(0.205 0 0);
+  --destructive: oklch(0.577 0.245 27.325);
+  --border: oklch(0.922 0 0);
+  --input: oklch(0.922 0 0);
+  --ring: oklch(0.708 0 0);
+  --chart-1: oklch(0.87 0 0);
+  --chart-2: oklch(0.556 0 0);
+  --chart-3: oklch(0.439 0 0);
+  --chart-4: oklch(0.371 0 0);
+  --chart-5: oklch(0.269 0 0);
+  --radius: 0.625rem;
+  --sidebar: oklch(0.985 0 0);
+  --sidebar-foreground: oklch(0.145 0 0);
+  --sidebar-primary: oklch(0.205 0 0);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.97 0 0);
+  --sidebar-accent-foreground: oklch(0.205 0 0);
+  --sidebar-border: oklch(0.922 0 0);
+  --sidebar-ring: oklch(0.708 0 0);
+}
+
+.dark {
+  --background: oklch(0.145 0 0);
+  --foreground: oklch(0.985 0 0);
+  --card: oklch(0.205 0 0);
+  --card-foreground: oklch(0.985 0 0);
+  --popover: oklch(0.205 0 0);
+  --popover-foreground: oklch(0.985 0 0);
+  --primary: oklch(0.922 0 0);
+  --primary-foreground: oklch(0.205 0 0);
+  --secondary: oklch(0.269 0 0);
+  --secondary-foreground: oklch(0.985 0 0);
+  --muted: oklch(0.269 0 0);
+  --muted-foreground: oklch(0.708 0 0);
+  --accent: oklch(0.269 0 0);
+  --accent-foreground: oklch(0.985 0 0);
+  --destructive: oklch(0.704 0.191 22.216);
+  --border: oklch(1 0 0 / 10%);
+  --input: oklch(1 0 0 / 15%);
+  --ring: oklch(0.556 0 0);
+  --chart-1: oklch(0.87 0 0);
+  --chart-2: oklch(0.556 0 0);
+  --chart-3: oklch(0.439 0 0);
+  --chart-4: oklch(0.371 0 0);
+  --chart-5: oklch(0.269 0 0);
+  --sidebar: oklch(0.205 0 0);
+  --sidebar-foreground: oklch(0.985 0 0);
+  --sidebar-primary: oklch(0.488 0.243 264.376);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.269 0 0);
+  --sidebar-accent-foreground: oklch(0.985 0 0);
+  --sidebar-border: oklch(1 0 0 / 10%);
+  --sidebar-ring: oklch(0.556 0 0);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+  html {
+    @apply font-sans;
+  }
+}
+/* ───────────────────────── Corncam design layer: "proof desk" ─────────────────────────
+   References (Dribbble, Oct 2026): Crosscheck by Suhayel Ahmed Nasim (hairline panes, mono labels, KPI strip,
+   verdict words in colour) and Loopframe by Leandro Ubilla (dark neutral surfaces, outlined status pills).
+   Rules: full-height panes divided by 1px hairlines; no glows, no glass, no shadows on content; one accent. */
+
+@theme inline {
+  --color-fake: var(--fake);
+  --color-real: var(--real);
+  --color-unsure: var(--unsure);
+  --color-brand: var(--brand);
+  --color-rule: var(--rule);
+}
+
+:root {
+  /* Warm paper (Crosscheck) */
+  --background: oklch(0.972 0.006 85);
+  --foreground: oklch(0.2 0.01 85);
+  --card: oklch(0.985 0.004 85);
+  --card-foreground: oklch(0.2 0.01 85);
+  --popover: oklch(0.99 0.003 85);
+  --muted: oklch(0.94 0.006 85);
+  --muted-foreground: oklch(0.5 0.01 85);
+  --accent: oklch(0.93 0.006 85);
+  --border: oklch(0.2 0.01 85 / 0.13);
+  --input: oklch(0.2 0.01 85 / 0.18);
+  --sidebar: oklch(0.965 0.006 85);
+  --sidebar-border: oklch(0.2 0.01 85 / 0.13);
+  --sidebar-accent: oklch(0.92 0.006 85);
+  --rule: oklch(0.2 0.01 85); /* the heavy rule above KPI strips */
+  --radius: 0.375rem;
+  --radius-shell: var(--radius);
+  --fake: oklch(0.56 0.18 30);
+  --real: oklch(0.52 0.12 160);
+  --unsure: oklch(0.64 0.13 70);
+  --brand: oklch(0.52 0.19 285);
+}
+
+.dark {
+  /* Neutral near-black (Loopframe), panes one step lighter, hairlines at 9% white */
+  --background: oklch(0.145 0.004 270);
+  --foreground: oklch(0.95 0.003 270);
+  --card: oklch(0.172 0.004 270);
+  --card-foreground: oklch(0.95 0.003 270);
+  --popover: oklch(0.19 0.005 270);
+  --popover-foreground: oklch(0.95 0.003 270);
+  --muted: oklch(0.22 0.005 270);
+  --muted-foreground: oklch(0.68 0.008 270);
+  --accent: oklch(0.23 0.006 270);
+  --secondary: oklch(0.23 0.006 270);
+  --border: oklch(1 0 0 / 0.09);
+  --input: oklch(1 0 0 / 0.13);
+  --sidebar: oklch(0.155 0.004 270);
+  --sidebar-border: oklch(1 0 0 / 0.09);
+  --sidebar-accent: oklch(0.22 0.006 270);
+  --rule: oklch(0.95 0.003 270 / 0.85);
+  --fake: oklch(0.68 0.17 30);
+  --real: oklch(0.74 0.13 160);
+  --unsure: oklch(0.8 0.13 75);
+  --brand: oklch(0.72 0.15 285);
+}
+
+/* Mono uppercase section label: "WIRE SERVICE · GLOBAL" */
+@utility eyebrow {
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  line-height: 1rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted-foreground);
+}
+
+@layer base {
+  html {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  h1,
+  h2,
+  h3 {
+    text-wrap: balance;
+  }
+  /* Content panels are flat: hairline outline, no shadow, no blur. */
+  [data-slot="card"] {
+    box-shadow: none;
+  }
+  /* Neutral inset outline so thumbnails don't bleed into the surface. */
+  main img {
+    outline: 1px solid oklch(0 0 0 / 0.1);
+    outline-offset: -1px;
+  }
+  .dark main img {
+    outline-color: oklch(1 0 0 / 0.1);
+  }
+}
+
+/* ───────────────────────── Motion ─────────────────────────
+   Crisp and fast to match the proof desk: UI motion under 300ms, strong ease-out curves, transform/opacity only. */
+
+@theme {
+  --ease-snappy: cubic-bezier(0.23, 1, 0.32, 1); /* enter, press, feedback */
+  --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1); /* sheets (iOS-like settle) */
+}
+
+/* Entrance for content that appears after a user action (a revealed truth, a streamed log line). Native
+   @starting-style: no mount state in React. Opacity + a 4px rise + a 2px blur that bridges the swap. */
+@utility enter {
+  transition:
+    opacity 220ms var(--ease-snappy),
+    transform 220ms var(--ease-snappy),
+    filter 220ms var(--ease-snappy);
+  @starting-style {
+    opacity: 0;
+    transform: translateY(4px);
+    filter: blur(2px);
+  }
+}
+
+/* The pipeline node that is running right now: a ring that breathes outward. Pseudo-element + transform/opacity, so
+   the node's own text never flickers and the animation stays on the GPU. */
+@keyframes node-ring {
+  0% {
+    opacity: 0.8;
+    transform: scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.045);
+  }
+}
+@utility node-running {
+  position: relative;
+  &::after {
+    content: "";
+    position: absolute;
+    inset: -2px;
+    border-radius: inherit;
+    border: 2px solid var(--brand);
+    pointer-events: none;
+    animation: node-ring 1.2s var(--ease-snappy) infinite;
+  }
+}
+
+/* Reduced motion: fewer and gentler, not zero. Keep fades (they aid comprehension); drop movement, pulsing and
+   decorative loops. Spinners stay: they are the only sign that work is in progress. */
+@media (prefers-reduced-motion: reduce) {
+  .enter {
+    @starting-style {
+      transform: none;
+      filter: none;
+    }
+  }
+  .node-running::after,
+  [data-slot="skeleton"] {
+    animation: none;
+  }
+  [data-slot="border-beam"] {
+    display: none;
+  }
+  [data-slot="sheet-content"] {
+    --tw-enter-translate-x: 0;
+    --tw-enter-translate-y: 0;
+    --tw-exit-translate-x: 0;
+    --tw-exit-translate-y: 0;
+  }
+}

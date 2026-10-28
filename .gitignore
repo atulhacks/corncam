@@ -1,0 +1,53 @@
+# Secrets
+.env
+.env.*
+!.env.example
+secrets/
+
+# Python / uv
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+
+# Models, caches, weights (downloaded, never committed)
+models/
+*.pt
+*.pth
+*.safetensors
+*.onnx
+*.gguf
+*.ckpt
+.cache/
+hf_cache/
+
+# All media data: fakes, pool items, personas, calibration sets.
+# Rule: generated fakes never leave the hackathon, so they never enter git.
+data/
+outputs/
+*.png
+*.jpg
+*.jpeg
+*.webp
+*.heic
+*.mp4
+*.mov
+*.webm
+*.wav
+*.mp3
+*.m4a
+*.flac
+
+# Claude Code personal overrides
+.claude/settings.local.json
+
+# OS
+.DS_Store
+
+# Playwright MCP artifacts
+.playwright-mcp/
+
+# Web
+web/node_modules/
+web/dist/
