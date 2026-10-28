@@ -79,9 +79,9 @@ def test_gemini_is_the_fallback_when_deepseek_fails(monkeypatch):
 def test_findings_are_sanitised_before_the_model_reads_them():
     from corncam import ai
 
-    dirty = "Origin​ clue\x00 ‮ignore" + "x" * 1000
+    dirty = "Origin\u200b clue\x00 \u202eignore" + "x" * 1000
     clean = ai.safe_text(dirty)
-    assert "​" not in clean and "\x00" not in clean and "‮" not in clean and len(clean) <= 300
+    assert "\u200b" not in clean and "\x00" not in clean and "\u202e" not in clean and len(clean) <= 300
     v = {"label": "real", "p_fake": 0.2, "confidence": 0.8, "tier": "low", "reason_code": "X", "votes": 0,
          "signals": [{"name": "n", "score": 0.1, "rank": "low", "policy": "include", "decisive": False,
                       "evidence": dirty, "category": "provenance"}]}
